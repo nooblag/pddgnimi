@@ -1,2 +1,5 @@
 # don't publish configs
 conf/
+
+# ignore geckodriver.log
+geckodriver.log
