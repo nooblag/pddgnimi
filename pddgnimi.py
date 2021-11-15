@@ -13,18 +13,21 @@ from email.mime.text import MIMEText # for html emails
 
 
 ### SETUP ###
+# search query
+if len(sys.argv) > 1:
+  searchQuery = sys.argv[1] # first arg passed to this script
+else:
+  print('No search query.')
+  print('Please enter search query as an argument.')
+  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here"')
+  exit()
+  
 # 1 second wait time
 moment = 1
-# search query
-searchQuery = sys.argv[1] # first arg passed to this script
 # email
 mailserverHost = 'mail.riseup.net'
 mailserverPort = 465
-mailserverUser = ''
-#mailserverPass = input("Type your password and press enter: ")
-mailserverPass = ''
-# address to send alerts to
-emailto = ''
+mailserverUser = 'thoughtmaybe@riseup.net'
 
 
 
@@ -103,13 +106,20 @@ if searchQuery:
     file.close()
 
 
-    """
+
     ### SEND EMAIL ###
+    # get the address to email alert to
+    with open("conf/emailto") as f:
+      # read from the first line only
+      emailto = f.readline().rstrip()
+    # get mailserver user password for SMTP login
+    with open("conf/mailserverPass") as f:
+      mailserverPass = f.readline().rstrip()
     message = MIMEMultipart("alternative")
-    message["Subject"] = "test"
+    message["Subject"] = "pddgnimi: " + searchQuery
     message["From"] = mailserverUser
     message["To"] = emailto
-    # turn the soup output from above into plain/html MIMEText object
+    # turn the soup output from above into html MIMEText object
     emailbody = MIMEText(soup, "html")
     # add the MIME part to the message
     message.attach(emailbody)
@@ -117,7 +127,8 @@ if searchQuery:
     with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
       mailserver.login(mailserverUser, mailserverPass)
       mailserver.sendmail(mailserverUser, emailto, message.as_string())
-    """
+      
+
 
   except Exception as errorMessage:
     print('Something went wrong')
@@ -133,11 +144,4 @@ if searchQuery:
       browser.quit()
     # goodbye!
     exit()
-  
-else:
-  print('No search query.')
-  print('Please enter search query as an argument.')
-  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here"')
-  exit()
-  
- 
+     
