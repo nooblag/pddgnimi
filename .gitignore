@@ -3,3 +3,6 @@ conf/
 
 # ignore geckodriver.log
 geckodriver.log
+
+# ignore temporary output
+output.html
