@@ -1,0 +1,9 @@
+body {
+    font-family: sans;
+}
+.result {
+    margin-bottom: 40px;
+}
+.result__title {
+    margin: 4px;
+}
