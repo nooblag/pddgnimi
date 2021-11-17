@@ -5,6 +5,8 @@ import traceback # to trace errors
 import smtplib, ssl # for emails
 import sys # for getting vars from commandline
 import html5lib # for handling HTML5
+import htmlmin # for minifying html
+import re # for find/replace
 from bs4 import BeautifulSoup # for prettifying html
 from time import sleep # use to slow things down even more
 from email.mime.multipart import MIMEMultipart # for html emails
@@ -80,6 +82,7 @@ if searchQuery:
     ### DUMP TO FILE ###
     # prepare to write results to a file
 
+    """
     # get any page CSS link references to use for styling the file save
     css = browser.get_elements(type="text/css")
 
@@ -95,6 +98,22 @@ if searchQuery:
     else:
       # no css found but set duckduckgo as a base URL for images and add search results
       result = '<base href="https://duckduckgo.com/">' + searchResults
+    """
+    
+    # minify filter what we have so far in order to get things consistent for find/replace below
+    result = htmlmin.minify(searchResults)
+    
+    # remove junk span tags and text from throughout the search results
+    find = "<span class=result__check__tt>Your browser indicates if you've visited this link</span>"
+    result = re.sub(find, '', result)
+    
+    # apply basic styling to the result from template
+    # get the template
+    style = open("style.css", "r")
+    css = style.read()
+    style.close()
+    # set base domain for images, prepend the css template, and add the search results
+    result = '<base href="https://duckduckgo.com/">' + '<style>'+css+'</style>' + result
 
     # parse and prettify the result
     soup = BeautifulSoup(result,features="html5lib").prettify()
@@ -104,9 +123,9 @@ if searchQuery:
     file = open("output.html", "w")
     file.write(soup)
     file.close()
+    
 
-
-
+    """
     ### SEND EMAIL ###
     # get the address to email alert to
     with open("conf/emailto") as f:
@@ -127,7 +146,7 @@ if searchQuery:
     with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
       mailserver.login(mailserverUser, mailserverPass)
       mailserver.sendmail(mailserverUser, emailto, message.as_string())
-      
+    """
 
 
   except Exception as errorMessage:
