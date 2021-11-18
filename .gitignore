@@ -1,5 +1,5 @@
 # don't publish configs
-conf/
+emailsettings.py
 
 # ignore geckodriver.log
 geckodriver.log
