@@ -6,11 +6,12 @@ import smtplib, ssl # for emails
 import sys # for getting vars from commandline
 import html5lib # for handling HTML5
 import htmlmin # for minifying html
-import re # for find/replace
+import re # for find/replace and regex to verify email address format
 from bs4 import BeautifulSoup # for prettifying html
 from time import sleep # use to slow things down even more
 from email.mime.multipart import MIMEMultipart # for html emails
 from email.mime.text import MIMEText # for html emails
+from emailSettings import mailserverHost, mailserverPort, mailserverUser, mailserverPass # get variables to work with mailserver
 
 
 
@@ -21,15 +22,29 @@ if len(sys.argv) > 1:
 else:
   print('No search query.')
   print('Please enter search query as an argument.')
-  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here"')
+  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
   exit()
-  
+
+# email address to send alerts to
+if len(sys.argv) > 2:
+  emailto = sys.argv[2] # second arg passed to this script
+  # set up a check to see if email address could be possibly valid
+  regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+  # now pass regex to fullmatch() method to check
+  if not (re.fullmatch(regex, emailto)):
+      # print invalid email address in bold and notify
+      print('\033[1m' + emailto + '\033[0m appears to be invalid?')
+      print('Please enter a valid email address as an argument with your search query.')
+      print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+      exit()
+else:
+  print('No email address to send alert to.')
+  print('Please enter an email address as an argument with your search query.')
+  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+  exit()
+    
 # 1 second wait time
 moment = 1
-# email
-mailserverHost = 'mail.riseup.net'
-mailserverPort = 465
-mailserverUser = 'thoughtmaybe@riseup.net'
 
 
 
@@ -125,15 +140,8 @@ if searchQuery:
     file.close()
     
 
-    """
     ### SEND EMAIL ###
-    # get the address to email alert to
-    with open("conf/emailto") as f:
-      # read from the first line only
-      emailto = f.readline().rstrip()
-    # get mailserver user password for SMTP login
-    with open("conf/mailserverPass") as f:
-      mailserverPass = f.readline().rstrip()
+    # set up a html email
     message = MIMEMultipart("alternative")
     message["Subject"] = "pddgnimi: " + searchQuery
     message["From"] = mailserverUser
@@ -146,7 +154,6 @@ if searchQuery:
     with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
       mailserver.login(mailserverUser, mailserverPass)
       mailserver.sendmail(mailserverUser, emailto, message.as_string())
-    """
 
 
   except Exception as errorMessage:
