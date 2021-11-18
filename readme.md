@@ -25,11 +25,7 @@ You've been warned! ;)
 sudo apt update && sudo apt install python3-pip
 
 # install dependencies
-pip install elemental html5lib htmlmin bs4 BeautifulSoup4
-
-# may also need to do this? if this error occurs?
-# ERROR: pyopenssl 21.0.0 has requirement cryptography>=3.3, but you'll have cryptography 2.8 which is incompatible.
-pip install --upgrade cryptography
+pip install elemental html5lib htmlmin bs4
 
 # install latest geckodriver for firefox from https://github.com/mozilla/geckodriver/releases/latest
 # put it somewhere like /usr/bin or something else from $PATH
@@ -40,7 +36,7 @@ sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
 ## Usage
 
 ```
-python3 pddgnimi.py "foo bar"
+python3 pddgnimi.py "foo bar" email@somewhere.com
 ```
 
-Where `foo bar` is your search query.
+Where `foo bar` is your search query, and `email@somewhere.com` is the address to send the alert to.
