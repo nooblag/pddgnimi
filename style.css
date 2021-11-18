@@ -6,4 +6,8 @@ body {
 }
 .result__title {
     margin: 4px;
+    font-size: 1em;
+}
+a {
+    text-decoration: none;
 }
