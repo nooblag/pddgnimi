@@ -1,6 +1,8 @@
 # pddgnimi
 
-"Put DuckDuckGo News In My Inbox"
+### "Put DuckDuckGo News In My Inbox"
+
+The purpose of this thing is to scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query and send the output to an email. It's intended to be invoked as a cronjob or something so as to get hits on a news topic once a day.
 
 **Under development!**
 
