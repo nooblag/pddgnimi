@@ -22,7 +22,7 @@ You've been warned! ;)
 - `bs4` `BeautifulSoup4` to prettify HTML
 
 
-```
+```bash
 # may need to install python package manager
 sudo apt update && sudo apt install python3-pip
 
