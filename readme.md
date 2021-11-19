@@ -2,7 +2,7 @@
 
 ### "Put DuckDuckGo News In My Inbox"
 
-The purpose of this thing is to scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query and send the output to an email. It's intended to be invoked as a cronjob or something so as to get hits on a news topic once a day.
+This thing should scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query and send the output to an email. It's intended to be invoked as a cronjob or something so as to get hits on a news topic once a day.
 
 **Under development!**
 
@@ -16,7 +16,7 @@ You've been warned! ;)
 ### Dependencies
 
 - [elemental](https://github.com/red-and-black/elemental)
-- [geckodriver](https://github.com/mozilla/geckodriver/releases/latest) if using Firefox w/ GUI?
+- [geckodriver](https://github.com/mozilla/geckodriver/releases/latest) if using Firefox w/ GUI
 - `html5lib` for parsing HTML
 - `htmlmin` for minifying HTML
 - `bs4` `BeautifulSoup4` to prettify HTML
@@ -38,7 +38,7 @@ sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
 ## Usage
 
 ```
-python3 pddgnimi.py "foo bar" email@somewhere.com
+python3 pddgnimi.py "foo bar" emailaddress@somewhere.com
 ```
 
-Where `foo bar` is your search query, and `email@somewhere.com` is the address to send the alert to.
+Where `foo bar` is your search query, and `emailaddress@somewhere.com` is the address to send the alert to.
