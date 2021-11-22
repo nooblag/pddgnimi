@@ -20,6 +20,11 @@ try:
 except:
   print('A SMTP configuration string is missing. Please check ./emailSettings.py.')
   exit()
+# ensure the setting strings aren't empty
+# use .strip to remove whitespace as part of the test
+if not mailserverHost.strip() or not mailserverPort.strip() or not mailserverUser.strip() or not mailserverPass.strip():
+  print('A SMTP configuration string is empty. Please check ./emailSettings.py.')
+  exit()
 
 
 
@@ -59,7 +64,9 @@ moment = 1
 ### SCRAPING ###
 try: 
   # open browser window
-  browser = elemental.Browser()
+  browser = elemental.Browser(headless=True)
+  # ensure browser window viewport is consistently big
+  browser.selenium_webdriver.set_window_size(1920,1080)
   
   # go to start.duckduckgo.com for consistent barebones search layout
   browser.visit("https://start.duckduckgo.com")
@@ -157,6 +164,7 @@ try:
   message.attach(emailbody)
   # open connection and send
   with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
+    mailserver.ehlo()
     mailserver.login(mailserverUser, mailserverPass)
     mailserver.sendmail(mailserverUser, emailto, message.as_string())
     mailserver.quit()
