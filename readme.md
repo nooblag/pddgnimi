@@ -19,7 +19,7 @@ You've been warned! ;)
 - [geckodriver](https://github.com/mozilla/geckodriver/releases/latest) for Firefox
 - `html5lib` for parsing HTML
 - `htmlmin` for minifying HTML
-- `bs4` `BeautifulSoup4` to prettify HTML
+- `bs4` BeautifulSoup to prettify HTML
 
 
 ```bash
