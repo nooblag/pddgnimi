@@ -7,12 +7,12 @@ try:
   import smtplib, ssl # for emails
   import sys # for getting vars from commandline
   import html5lib # for handling HTML5
-  import htmlmin # for minifying html
+  import htmlmin # for minifying HTML
   import re # for find/replace and regex to verify email address format
-  from bs4 import BeautifulSoup # for prettifying html
+  from bs4 import BeautifulSoup # for prettifying HTML
   from time import sleep # use to slow things down even more
-  from email.mime.multipart import MIMEMultipart # for html emails
-  from email.mime.text import MIMEText # for html emails
+  from email.mime.multipart import MIMEMultipart # for HTML emails
+  from email.mime.text import MIMEText # for HTML emails
 except Exception as errorMessage:
   print('Error:', errorMessage)
   # suggest how to fix missing packages. yellow colour using ANSI escape codes
@@ -169,7 +169,7 @@ try:
   emailbody = MIMEText(soup, "html")
   # add the MIME part to the message
   message.attach(emailbody)
-  # open connection and send
+  # open TLS connection and send
   with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
     mailserver.ehlo()
     mailserver.login(mailserverUser, mailserverPass)
