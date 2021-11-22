@@ -1,18 +1,23 @@
 #!/usr/bin/python3
 
-
 ### REQUISITES ###
-import elemental # wrapper for selenium
-import traceback # to trace errors
-import smtplib, ssl # for emails
-import sys # for getting vars from commandline
-import html5lib # for handling HTML5
-import htmlmin # for minifying html
-import re # for find/replace and regex to verify email address format
-from bs4 import BeautifulSoup # for prettifying html
-from time import sleep # use to slow things down even more
-from email.mime.multipart import MIMEMultipart # for html emails
-from email.mime.text import MIMEText # for html emails
+try:
+  import elemental # wrapper for selenium
+  import traceback # to trace errors
+  import smtplib, ssl # for emails
+  import sys # for getting vars from commandline
+  import html5lib # for handling HTML5
+  import htmlmin # for minifying html
+  import re # for find/replace and regex to verify email address format
+  from bs4 import BeautifulSoup # for prettifying html
+  from time import sleep # use to slow things down even more
+  from email.mime.multipart import MIMEMultipart # for html emails
+  from email.mime.text import MIMEText # for html emails
+except Exception as errorMessage:
+  print('Error:', errorMessage)
+  # suggest how to fix missing packages. yellow colour using ANSI escape code
+  print('Have you run\033[93m pip install elemental html5lib htmlmin bs4\033[00m ?')
+  exit()
 
 # try to import SMTP mailserver settings from enclosed emailSettings.py config file
 try:
@@ -20,7 +25,8 @@ try:
 except:
   print('A SMTP configuration string is missing. Please check ./emailSettings.py.')
   exit()
-# ensure the setting strings aren't empty
+  
+# ensure the mailserver settings aren't empty
 # use .strip to remove whitespace as part of the test
 if not mailserverHost.strip() or not mailserverPort.strip() or not mailserverUser.strip() or not mailserverPass.strip():
   print('A SMTP configuration string is empty. Please check ./emailSettings.py.')
