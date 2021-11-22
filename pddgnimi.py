@@ -15,8 +15,8 @@ try:
   from email.mime.text import MIMEText # for html emails
 except Exception as errorMessage:
   print('Error:', errorMessage)
-  # suggest how to fix missing packages. yellow colour using ANSI escape code
-  print('Have you run\033[93m pip install elemental html5lib htmlmin bs4\033[00m ?')
+  # suggest how to fix missing packages. yellow colour using ANSI escape codes
+  print('Have you run ' +'\033[93m'+ 'pip install elemental html5lib htmlmin bs4' +'\033[00m'+ ' ?')
   exit()
 
 # try to import SMTP mailserver settings from enclosed emailSettings.py config file
