@@ -16,7 +16,7 @@ You've been warned! ;)
 ### Dependencies
 
 - [elemental](https://github.com/red-and-black/elemental)
-- [geckodriver](https://github.com/mozilla/geckodriver/releases/latest) if using Firefox w/ GUI
+- [geckodriver](https://github.com/mozilla/geckodriver/releases/latest) for Firefox
 - `html5lib` for parsing HTML
 - `htmlmin` for minifying HTML
 - `bs4` `BeautifulSoup4` to prettify HTML
