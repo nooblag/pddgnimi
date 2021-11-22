@@ -28,6 +28,7 @@ if not mailserverHost.strip() or not mailserverPort.strip() or not mailserverUse
 
 
 
+
 ### SETUP ###
 # search query
 if len(sys.argv) > 1:
