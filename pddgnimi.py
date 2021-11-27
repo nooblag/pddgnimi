@@ -6,6 +6,8 @@ try:
   import traceback # to trace errors
   import smtplib, ssl # for emails
   import sys # for getting vars from commandline
+  import os # for working with files
+  import pathlib # for getting working directory
   import html5lib # for handling HTML5
   import htmlmin # for minifying HTML
   import re # for find/replace and regex to verify email address format
@@ -65,6 +67,11 @@ else:
     
 # 1 second wait time
 moment = 1
+
+# get full path where this script is
+wd = pathlib.Path(__file__).parent.absolute()
+# rewrite above to ensure trailing slash!
+wd = os.path.join(wd, '')
 
 
 
@@ -143,7 +150,7 @@ try:
   
   # apply basic styling to the result from template
   # get the template
-  style = open("style.css", "r")
+  style = open(wd + 'style.css', 'r')
   css = style.read()
   style.close()
   # set base domain for images, prepend the css template, and add the search results
@@ -154,7 +161,7 @@ try:
   ##soup = BeautifulSoup(result,features="html.parser").prettify()
 
   # now actually write
-  file = open("output.html", "w")
+  file = open(wd + 'output.html', 'w')
   file.write(soup)
   file.close()
   
