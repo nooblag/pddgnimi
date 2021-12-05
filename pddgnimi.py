@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
+
 ### REQUISITES ###
+
 try:
   import elemental # wrapper for selenium
   import traceback # to trace errors
@@ -38,6 +40,25 @@ if not mailserverHost.strip() or not mailserverPort.strip() or not mailserverUse
 
 
 ### SETUP ###
+
+# prepare to check if an argument is a properly formatted email address
+def email_error_notify():
+  print('Please enter a valid email address as an argument with your search query.')
+  if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
+    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
+  else:
+    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+  exit()
+
+def testemail(address):
+  regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+  # now pass regex to fullmatch() method to check
+  if not (re.fullmatch(regex, address)):
+    # print invalid email address in bold and notify
+    print('\033[1m' + address + '\033[0m appears to be invalid?')
+    email_error_notify()
+
+
 # search query
 if len(sys.argv) > 1:
   searchQuery = sys.argv[1] # first arg passed to this script
@@ -47,24 +68,31 @@ else:
   print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
   exit()
 
-# email address to send alerts to
+
+# query scope (i.e. get news articles from past day, week, month; or any time) OR email address to send alerts to
 if len(sys.argv) > 2:
-  emailto = sys.argv[2] # second arg passed to this script
-  # set up a check to see if email address could be possibly valid
-  regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-  # now pass regex to fullmatch() method to check
-  if not (re.fullmatch(regex, emailto)):
-      # print invalid email address in bold and notify
-      print('\033[1m' + emailto + '\033[0m appears to be invalid?')
-      print('Please enter a valid email address as an argument with your search query.')
-      print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-      exit()
+  # test this arg to see if it's day|week|month|any
+  if sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
+    scope = sys.argv[2] # second arg passed to this script
+    if len(sys.argv) > 3:
+      emailto = sys.argv[3] # third arg passed to this script
+      testemail(emailto)
+    else:
+      print('Search query and scope accepted, but missing an email address.')
+      email_error_notify()
+  else:
+    # no scope defined, so default it to day and expect 2nd argument to be an email address
+    scope = 'day'
+    if len(sys.argv) > 3:
+      emailto = sys.argv[3] # third arg passed to this script
+    else:
+      emailto = sys.argv[2] # default to second arg passed to this script
+    # now run test to see if email address is valid
+    testemail(emailto)
 else:
   print('No email address to send alert to.')
-  print('Please enter an email address as an argument with your search query.')
-  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-  exit()
-    
+  email_error_notify()
+
 # 1 second wait time
 moment = 1
 
@@ -75,7 +103,9 @@ wd = os.path.join(wd, '')
 
 
 
+
 ### SCRAPING ###
+
 try: 
   # open browser window
   browser = elemental.Browser(headless=True)
@@ -108,19 +138,27 @@ try:
   sleep(moment)
   browser.get_element(text="Off", wait=moment).click()
 
-  # narrow search to be within the last day
+  # narrow search to be within the specified scope
   sleep(moment)
   browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--date", wait=moment).click()
   sleep(moment)
-  browser.get_element(text="Past day", wait=moment).click()
+  if scope == 'any':
+    browser.get_element(text="Any time", wait=moment).click()
+  elif scope == 'week':
+    browser.get_element(text="Past week", wait=moment).click()
+  elif scope == 'month':
+    browser.get_element(text="Past month", wait=moment).click()
+  else:
+    browser.get_element(text="Past day", wait=moment).click()
 
-  # get the column with results only
+  # now get the column with results only
   sleep(moment+2) # go mega slow here
   searchResults = browser.get_element(css="div.results--main div.results.js-vertical-results", wait=moment).html
 
 
 
   ### DUMP TO FILE ###
+
   # prepare to write results to a file
 
   """
@@ -166,7 +204,9 @@ try:
   file.close()
   
 
+
   ### SEND EMAIL ###
+
   # if we have some results, send email alert
   if not 'No news articles found for' in soup:
     # set up a html email
