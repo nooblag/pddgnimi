@@ -55,3 +55,15 @@ python3 pddgnimi.py "foo bar" emailaddress@somewhere.com
 ```
 
 Where `foo bar` is your search query, and `emailaddress@somewhere.com` is the address to send the alert to.
+
+### Changing Scope
+
+Narrowing results from a the past day or past week or past month or from any time can be specified as the second argument. For example, for alerts of news from the past week:
+
+```
+python3 pddgnimi.py "foo bar" week emailaddress@somewhere.com
+```
+
+Acceptable arguments for scope are: `day` `week` `month` `any`
+
+If no argument is specified, the default is to scrape news articles from the past `day`
