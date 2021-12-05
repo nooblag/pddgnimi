@@ -167,21 +167,23 @@ try:
   
 
   ### SEND EMAIL ###
-  # set up a html email
-  message = MIMEMultipart("alternative")
-  message["Subject"] = "pddgnimi: " + searchQuery
-  message["From"] = mailserverUser
-  message["To"] = emailto
-  # turn the soup output from above into html MIMEText object
-  emailbody = MIMEText(soup, "html")
-  # add the MIME part to the message
-  message.attach(emailbody)
-  # open TLS connection and send
-  with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-    mailserver.ehlo()
-    mailserver.login(mailserverUser, mailserverPass)
-    mailserver.sendmail(mailserverUser, emailto, message.as_string())
-    mailserver.quit()
+  # if we have some results, send email alert
+  if not 'No news articles found for' in soup:
+    # set up a html email
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "pddgnimi: " + searchQuery
+    message["From"] = mailserverUser
+    message["To"] = emailto
+    # turn the soup output from above into html MIMEText object
+    emailbody = MIMEText(soup, "html")
+    # add the MIME part to the message
+    message.attach(emailbody)
+    # open TLS connection and send
+    with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
+      mailserver.ehlo()
+      mailserver.login(mailserverUser, mailserverPass)
+      mailserver.sendmail(mailserverUser, emailto, message.as_string())
+      mailserver.quit()
 
 
 except:
