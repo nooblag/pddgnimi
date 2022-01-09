@@ -158,26 +158,7 @@ try:
 
 
   ### DUMP TO FILE ###
-
   # prepare to write results to a file
-
-  """
-  # get any page CSS link references to use for styling the file save
-  css = browser.get_elements(type="text/css")
-
-  if css:
-    # got something to work with
-    # ensure build string is empty
-    css_lines = ''
-    # now grab each element captured in css and extract its HTML content
-    for element in css:
-      css_lines += element.html
-    # set duckduckgo as a base URL for image and css assets and add search results
-    result = '<base href="https://duckduckgo.com/">' + css_lines + searchResults
-  else:
-    # no css found but set duckduckgo as a base URL for images and add search results
-    result = '<base href="https://duckduckgo.com/">' + searchResults
-  """
   
   # minify filter what we have so far in order to get things consistent for find/replace below
   result = htmlmin.minify(searchResults)
