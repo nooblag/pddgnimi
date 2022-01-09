@@ -35,18 +35,6 @@ wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodrive
 sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
 ```
 
-### Mail Server Settings
-
-Open the `emailSettings.py` settings file and edit it to specify the SMTP server to use to send email alerts with.
-
-Should be something like:
-
-```python
-mailserverHost = 'smtp.somewhere.com'
-mailserverPort = '465'
-mailserverUser = 'authaddress@somewhere.com'
-mailserverPass = 'PasswordGoesHere'
-```
 
 ## Usage
 
