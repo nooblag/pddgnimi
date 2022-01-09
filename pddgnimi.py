@@ -83,7 +83,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
       # now pass regex to fullmatch() method to check
       if not (re.fullmatch(regex, address)):
         # print invalid email address in bold and notify
-        print('\033[1m' + address + '\033[0m appears to be invalid?')
+        print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
         email_error_notify()
 
 
