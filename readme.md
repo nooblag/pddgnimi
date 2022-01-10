@@ -34,12 +34,22 @@ wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodrive
 sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
 ```
 
+### Configuration
+
+Start the script for the first time to set up the details for the SMTP server that will be used to send your e-mail alerts.
+
+```bash
+python3 pddgnimi.py
+```
+
+The script will then save that configuration into `./settings.conf`
+
 
 ## Usage
 
 **pddgnimi** is intended to be invoked from the command line, as follows:
 
-```
+```bash
 python3 pddgnimi.py "foo bar" emailaddress@somewhere.com
 ```
 
@@ -50,7 +60,7 @@ Where `foo bar` is your search query, and `emailaddress@somewhere.com` is the ad
 
 Narrowing results from a the past day or past week or past month or from any time can be specified as the second argument. For example, for alerts of news from the past week:
 
-```
+```bash
 python3 pddgnimi.py "foo bar" week emailaddress@somewhere.com
 ```
 
