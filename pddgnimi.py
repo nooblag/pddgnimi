@@ -10,7 +10,6 @@ try:
   import pathlib # for getting working directory
   import configparser # to work with settings
   import getpass # handling password user input
-  import secrets # for generating keys
   import elemental # wrapper for selenium
   import traceback # to trace errors
   import smtplib # for SMTP connection
