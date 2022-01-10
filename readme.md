@@ -4,6 +4,11 @@
 
 This thing should scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query in Australia and send the output to an email. It's intended to be invoked as a cronjob or something so as to get hits on a news topic once a day.
 
+For example, here's an e-mail alert for "celebrity news":
+
+![Screenshot from 2022-01-10 22-07-24](https://user-images.githubusercontent.com/1122344/148756507-2765c8dc-13a4-48d7-9c5f-8d66c7e093f9.png)
+
+
 **Under development!**
 
 `develop` branch is fiddling, and this thing probably doesn't work as well as it should... It's the first thing I've ever written in Python...
@@ -37,6 +42,8 @@ sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
 
 
 ## Usage
+
+**pddgnimi** is intended to be invoked from the command line, as follows:
 
 ```
 python3 pddgnimi.py "foo bar" emailaddress@somewhere.com
