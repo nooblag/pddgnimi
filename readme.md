@@ -2,7 +2,7 @@
 
 ### "Put DuckDuckGo News In My Inbox"
 
-This thing should scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query in Australia and send the output to an email. It's intended to be invoked as a cronjob or something so as to get hits on a news topic once a day.
+This thing should scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query in Australia and send the results to you in an e-mail. It's intended to be invoked as a cronjob so as to get hits on a news topic at intervals of your choosing.
 
 For example, here's an e-mail alert for "celebrity news":
 
