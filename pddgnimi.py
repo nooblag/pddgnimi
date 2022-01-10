@@ -15,13 +15,13 @@ try:
   import ssl # for TLS over SMTP
   import html5lib # for handling HTML5
   import htmlmin # for minifying HTML
-  import re # for find/replace and regex to verify email address format
-  import email.message # used in plain text email test during setup
-  import email.utils # used in plain text email test during setup
+  import re # for find/replace and regex to verify e-mail address format
+  import email.message # used in plain text e-mail test during setup
+  import email.utils # used in plain text e-mail test during setup
   from bs4 import BeautifulSoup # for prettifying HTML
   from time import sleep # use to slow things down even more
-  from email.mime.multipart import MIMEMultipart # for HTML emails
-  from email.mime.text import MIMEText # for HTML emails
+  from email.mime.multipart import MIMEMultipart # for HTML e-mails
+  from email.mime.text import MIMEText # for HTML e-mails
 except Exception as errorMessage:
   print('Error:', errorMessage)
   # suggest how to fix missing packages. yellow colour using ANSI escape codes
@@ -69,9 +69,9 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
     ### ENVIRONMENT ###
 
-    # prepare to check if an argument is a properly formatted email address
+    # prepare to check if an argument is a properly formatted e-mail address
     def email_error_notify():
-      print('Please enter a valid email address as an argument with your search query.')
+      print('Please enter a valid e-mail address as an argument with your search query.')
       if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
         print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
       else:
@@ -82,7 +82,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
       regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
       # now pass regex to fullmatch() method to check
       if not (re.fullmatch(regex, address)):
-        # print invalid email address in bold and notify
+        # print invalid e-mail address in bold and notify
         print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
         email_error_notify()
 
@@ -97,7 +97,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
       exit()
 
 
-    # query scope (i.e. get news articles from past day, week, month; or any time) OR email address to send alerts to
+    # query scope (i.e. get news articles from past day, week, month; or any time) OR e-mail address to send alerts to
     if len(sys.argv) > 2:
       # test this arg to see if it's day|week|month|any
       if sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
@@ -106,19 +106,19 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
           emailto = sys.argv[3] # third arg passed to this script
           testemail(emailto)
         else:
-          print('Search query and scope accepted, but missing an email address.')
+          print('Search query and scope accepted, but missing an e-mail address.')
           email_error_notify()
       else:
-        # no scope defined, so default it to day and expect 2nd argument to be an email address
+        # no scope defined, so default it to day and expect 2nd argument to be an e-mail address
         scope = 'day'
         if len(sys.argv) > 3:
           emailto = sys.argv[3] # third arg passed to this script
         else:
           emailto = sys.argv[2] # default to second arg passed to this script
-        # now run test to see if email address is valid
+        # now run test to see if e-mail address is valid
         testemail(emailto)
     else:
-      print('No email address to send alert to.')
+      print('No e-mail address to send alert to.')
       email_error_notify()
 
 
@@ -209,9 +209,9 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
       ### SEND EMAIL ###
 
-      # if we have some results, send email alert
+      # if we have some results, send e-mail alert
       if not 'No news articles found for' in soup:
-        # set up a html email
+        # set up a html e-mail
         message = MIMEMultipart("alternative")
         message["Subject"] = "pddgnimi: " + searchQuery
         message["From"] = mailserverUser
@@ -250,7 +250,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 # config file or settings not found
 else:
   # first runtime, ask user some questions to set up config file
-  print("\nBefore pddgnimi can be used, you need to set up a connection to a SMTP server to send email alerts.")
+  print("\nBefore pddgnimi can be used, you need to set up a connection to a SMTP server to send e-mail alerts.")
   print("Please enter your settings below.\n")
   
   # create a section for SMTP settings
@@ -277,7 +277,7 @@ else:
       mailserver.sendmail(mailserverUser, mailserverUser, message.as_string())
       mailserver.quit()
   except Exception as errorMessage:
-    print("\nThere was a problem sending email with the SMTP settings provided. Are you sure all the details are correct and that the server is up?")
+    print("\nThere was a problem sending e-mail with the SMTP settings provided. Are you sure all the details are correct and that the server is up?")
     print('Error:', errorMessage)
     exit()
 
