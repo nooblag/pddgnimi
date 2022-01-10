@@ -54,194 +54,194 @@ moment = 1
 
 # if config file exists, and is a non-empty file, try to use it
 if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.getsize(configFile) == 0:
+  # read config file in sections
+  config.read(configFile)
+  mailserverHost = config['SMTP']['host']
+  mailserverPort = config['SMTP']['port']
+  mailserverUser = config['SMTP']['user']
+  mailserverPass = config['SMTP']['pass']
 
-    # read config file in sections
-    config.read(configFile)
-    mailserverHost = config['SMTP']['host']
-    mailserverPort = config['SMTP']['port']
-    mailserverUser = config['SMTP']['user']
-    mailserverPass = config['SMTP']['pass']
-
-    # ensure required minimum settings aren't empty before continuing
-    if not mailserverHost.strip() or not mailserverUser.strip() or not mailserverPass.strip():
-      print('A required SMTP configuration string is empty. Please check ' + configFile)
-      exit()
-
-
-    ### ENVIRONMENT ###
-
-    # prepare to check if an argument is a properly formatted e-mail address
-    def email_error_notify():
-      print('Please enter a valid e-mail address as an argument with your search query.')
-      if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
-        print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
-      else:
-        print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-      exit()
-
-    def testemail(address):
-      regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-      # now pass regex to fullmatch() method to check
-      if not (re.fullmatch(regex, address)):
-        # print invalid e-mail address in bold and notify
-        print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
-        email_error_notify()
+  # ensure required minimum settings aren't empty before continuing
+  if not mailserverHost.strip() or not mailserverUser.strip() or not mailserverPass.strip():
+    print('A required SMTP configuration string is empty. Please check ' + configFile)
+    exit()
 
 
-    # search query
-    if len(sys.argv) > 1:
-      searchQuery = sys.argv[1] # first arg passed to this script
+
+  ### ENVIRONMENT ###
+
+  # prepare to check if an argument is a properly formatted e-mail address
+  def email_error_notify():
+    print('Please enter a valid e-mail address as an argument with your search query.')
+    if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
+      print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
     else:
-      print('No search query.')
-      print('Please enter search query as an argument.')
       print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-      exit()
+    exit()
 
-
-    # query scope (i.e. get news articles from past day, week, month; or any time) OR e-mail address to send alerts to
-    if len(sys.argv) > 2:
-      # test this arg to see if it's day|week|month|any
-      if sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
-        scope = sys.argv[2] # second arg passed to this script
-        if len(sys.argv) > 3:
-          emailto = sys.argv[3] # third arg passed to this script
-          testemail(emailto)
-        else:
-          print('Search query and scope accepted, but missing an e-mail address.')
-          email_error_notify()
-      else:
-        # no scope defined, so default it to day and expect 2nd argument to be an e-mail address
-        scope = 'day'
-        if len(sys.argv) > 3:
-          emailto = sys.argv[3] # third arg passed to this script
-        else:
-          emailto = sys.argv[2] # default to second arg passed to this script
-        # now run test to see if e-mail address is valid
-        testemail(emailto)
-    else:
-      print('No e-mail address to send alert to.')
+  def testemail(address):
+    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    # now pass regex to fullmatch() method to check
+    if not (re.fullmatch(regex, address)):
+      # print invalid e-mail address in bold and notify
+      print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
       email_error_notify()
 
 
+  # search query
+  if len(sys.argv) > 1:
+    searchQuery = sys.argv[1] # first arg passed to this script
+  else:
+    print('No search query.')
+    print('Please enter search query as an argument.')
+    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+    exit()
 
 
-
-    ### SCRAPING ###
-
-    try: 
-      # open browser window
-      browser = elemental.Browser(headless=True)
-      # ensure browser window viewport is consistently big
-      browser.selenium_webdriver.set_window_size(1920,1080)
-      
-      # go to start.duckduckgo.com for consistent barebones search layout
-      browser.visit("https://start.duckduckgo.com")
-      
-      # find the search box and type in the query using fill
-      browser.get_element(id="search_form_input_homepage").fill(searchQuery)
-      
-      # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts?
-      sleep(moment)
-      browser.get_element(id="search_button_homepage", wait=moment).click()
-
-      # now in search results, refine our search to be news articles only
-      sleep(moment)
-      browser.get_element(id="duckbar_static").get_element(text="News", wait=moment).click()
-
-      # click on the region dropdown menu and ensure it is set to australia
-      sleep(moment)
-      browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--region", wait=moment).click()
-      sleep(moment)
-      browser.get_element(text="Australia", wait=moment).click()
-
-      # turn safe search off
-      sleep(moment)
-      browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--safe-search", wait=moment).click()
-      sleep(moment)
-      browser.get_element(text="Off", wait=moment).click()
-
-      # narrow search to be within the specified scope
-      sleep(moment)
-      browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--date", wait=moment).click()
-      sleep(moment)
-      if scope == 'any':
-        browser.get_element(text="Any time", wait=moment).click()
-      elif scope == 'week':
-        browser.get_element(text="Past week", wait=moment).click()
-      elif scope == 'month':
-        browser.get_element(text="Past month", wait=moment).click()
+  # query scope (i.e. get news articles from past day, week, month; or any time) OR e-mail address to send alerts to
+  if len(sys.argv) > 2:
+    # test this arg to see if it's day|week|month|any
+    if sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
+      scope = sys.argv[2] # second arg passed to this script
+      if len(sys.argv) > 3:
+        emailto = sys.argv[3] # third arg passed to this script
+        testemail(emailto)
       else:
-        browser.get_element(text="Past day", wait=moment).click()
-
-      # now get the column with results only
-      sleep(moment+2) # go mega slow here
-      searchResults = browser.get_element(css="div.results--main div.results.js-vertical-results", wait=moment).html
-
-
-
-      ### DUMP TO FILE ###
-      # prepare to write results to a file
-      
-      # minify filter what we have so far in order to get things consistent for find/replace below
-      result = htmlmin.minify(searchResults)
-      
-      # remove junk span tags and text from throughout the search results
-      find = "<span class=result__check__tt>Your browser indicates if you've visited this link</span>"
-      result = re.sub(find, '', result)
-      
-      # apply basic styling to the result from template
-      # get the template
-      style = open(wd + 'style.css', 'r')
-      css = style.read()
-      style.close()
-      # set base domain for images, prepend the css template, and add the search results
-      result = '<base href="https://duckduckgo.com/">' + '<style>'+css+'</style>' + result
-
-      # parse and prettify the result
-      soup = BeautifulSoup(result,features="html5lib").prettify()
-      ##soup = BeautifulSoup(result,features="html.parser").prettify()
-
-      # now actually write
-      file = open(wd + 'output.html', 'w')
-      file.write(soup)
-      file.close()
-      
+        print('Search query and scope accepted, but missing an e-mail address.')
+        email_error_notify()
+    else:
+      # no scope defined, so default it to day and expect 2nd argument to be an e-mail address
+      scope = 'day'
+      if len(sys.argv) > 3:
+        emailto = sys.argv[3] # third arg passed to this script
+      else:
+        emailto = sys.argv[2] # default to second arg passed to this script
+      # now run test to see if e-mail address is valid
+      testemail(emailto)
+  else:
+    print('No e-mail address to send alert to.')
+    email_error_notify()
 
 
-      ### SEND EMAIL ###
-
-      # if we have some results, send e-mail alert
-      if not 'No news articles found for' in soup:
-        # set up a html e-mail
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "pddgnimi: " + searchQuery
-        message["From"] = mailserverUser
-        message["To"] = emailto
-        # turn the soup output from above into html MIMEText object
-        emailbody = MIMEText(soup, "html")
-        # add the MIME part to the message
-        message.attach(emailbody)
-        # open TLS connection and send
-        with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-          mailserver.ehlo()
-          mailserver.login(mailserverUser, mailserverPass)
-          mailserver.sendmail(mailserverUser, emailto, message.as_string())
-          mailserver.quit()
 
 
-    except:
-      print('Something went wrong.\n')
-      # show and trace the error message
-      traceback.print_exc()
+
+  ### SCRAPING ###
+
+  try: 
+    # open browser window
+    browser = elemental.Browser(headless=True)
+    # ensure browser window viewport is consistently big
+    browser.selenium_webdriver.set_window_size(1920,1080)
+    
+    # go to start.duckduckgo.com for consistent barebones search layout
+    browser.visit("https://start.duckduckgo.com")
+    
+    # find the search box and type in the query using fill
+    browser.get_element(id="search_form_input_homepage").fill(searchQuery)
+    
+    # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts?
+    sleep(moment)
+    browser.get_element(id="search_button_homepage", wait=moment).click()
+
+    # now in search results, refine our search to be news articles only
+    sleep(moment)
+    browser.get_element(id="duckbar_static").get_element(text="News", wait=moment).click()
+
+    # click on the region dropdown menu and ensure it is set to australia
+    sleep(moment)
+    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--region", wait=moment).click()
+    sleep(moment)
+    browser.get_element(text="Australia", wait=moment).click()
+
+    # turn safe search off
+    sleep(moment)
+    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--safe-search", wait=moment).click()
+    sleep(moment)
+    browser.get_element(text="Off", wait=moment).click()
+
+    # narrow search to be within the specified scope
+    sleep(moment)
+    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--date", wait=moment).click()
+    sleep(moment)
+    if scope == 'any':
+      browser.get_element(text="Any time", wait=moment).click()
+    elif scope == 'week':
+      browser.get_element(text="Past week", wait=moment).click()
+    elif scope == 'month':
+      browser.get_element(text="Past month", wait=moment).click()
+    else:
+      browser.get_element(text="Past day", wait=moment).click()
+
+    # now get the column with results only
+    sleep(moment+2) # go mega slow here
+    searchResults = browser.get_element(css="div.results--main div.results.js-vertical-results", wait=moment).html
 
 
-    finally:
-      ### CLEAN UP ###
-      if browser:
-        # close browser
-        browser.quit()
-      # goodbye!
-      exit()
+
+    ### DUMP TO FILE ###
+    # prepare to write results to a file
+    
+    # minify filter what we have so far in order to get things consistent for find/replace below
+    result = htmlmin.minify(searchResults)
+    
+    # remove junk span tags and text from throughout the search results
+    find = "<span class=result__check__tt>Your browser indicates if you've visited this link</span>"
+    result = re.sub(find, '', result)
+    
+    # apply basic styling to the result from template
+    # get the template
+    style = open(wd + 'style.css', 'r')
+    css = style.read()
+    style.close()
+    # set base domain for images, prepend the css template, and add the search results
+    result = '<base href="https://duckduckgo.com/">' + '<style>'+css+'</style>' + result
+
+    # parse and prettify the result
+    soup = BeautifulSoup(result,features="html5lib").prettify()
+    ##soup = BeautifulSoup(result,features="html.parser").prettify()
+
+    # now actually write
+    file = open(wd + 'output.html', 'w')
+    file.write(soup)
+    file.close()
+    
+
+
+    ### SEND EMAIL ###
+
+    # if we have some results, send e-mail alert
+    if not 'No news articles found for' in soup:
+      # set up a html e-mail
+      message = MIMEMultipart("alternative")
+      message["Subject"] = "pddgnimi: " + searchQuery
+      message["From"] = mailserverUser
+      message["To"] = emailto
+      # turn the soup output from above into html MIMEText object
+      emailbody = MIMEText(soup, "html")
+      # add the MIME part to the message
+      message.attach(emailbody)
+      # open TLS connection and send
+      with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
+        mailserver.ehlo()
+        mailserver.login(mailserverUser, mailserverPass)
+        mailserver.sendmail(mailserverUser, emailto, message.as_string())
+        mailserver.quit()
+
+
+  except:
+    print('Something went wrong.\n')
+    # show and trace the error message
+    traceback.print_exc()
+
+
+  finally:
+    ### CLEAN UP ###
+    if browser:
+      # close browser
+      browser.quit()
+    # goodbye!
+    exit()
 
 
 
