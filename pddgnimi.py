@@ -93,7 +93,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
   # search query
   if len(sys.argv) > 1:
-    searchQuery = sys.argv[1] # first arg passed to this script
+    searchQuery = sys.argv[1] # first argument passed to this script
   else:
     print('No search query.')
     print('Please enter search query as an argument.')
@@ -103,23 +103,23 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
   # query scope (i.e. get news articles from past day, week, month; or any time) OR e-mail address to send alerts to
   if len(sys.argv) > 2:
-    # test this arg to see if it's day|week|month|any
+    # test this argument to see if it's day|week|month|any
     if sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
-      scope = sys.argv[2] # second arg passed to this script
+      scope = sys.argv[2] # second argument passed to this script
       if len(sys.argv) > 3:
-        emailto = sys.argv[3] # third arg passed to this script
+        emailto = sys.argv[3] # third argument passed to this script
         testemail(emailto)
       else:
         print('Search query and scope accepted, but missing an e-mail address.')
         email_error_notify()
     else:
-      # no scope defined, so default it to day and expect 2nd argument to be an e-mail address
+      # no scope defined, so default it to day and expect second argument to be an e-mail address
       scope = 'day'
       if len(sys.argv) > 3:
-        emailto = sys.argv[3] # third arg passed to this script
+        emailto = sys.argv[3] # third argument passed to this script
       else:
-        emailto = sys.argv[2] # default to second arg passed to this script
-      # now run test to see if e-mail address is valid
+        emailto = sys.argv[2] # default to second argument passed to this script
+      # now run test to see if e-mail address (second argument) is valid
       testemail(emailto)
   else:
     print('No e-mail address to send alert to.')
@@ -143,7 +143,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     # find the search box and type in the query using fill
     browser.get_element(id="search_form_input_homepage").fill(searchQuery)
     
-    # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts?
+    # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts
     sleep(moment)
     browser.get_element(id="search_button_homepage", wait=moment).click()
 
@@ -151,7 +151,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     sleep(moment)
     browser.get_element(id="duckbar_static").get_element(text="News", wait=moment).click()
 
-    # click on the region dropdown menu and ensure it is set to australia
+    # click on the region dropdown menu and ensure it is set to Australia
     sleep(moment)
     browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--region", wait=moment).click()
     sleep(moment)
@@ -194,15 +194,14 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     
     # apply basic styling to the result from template
     # get the template
-    style = open(wd + 'style.css', 'r')
-    css = style.read()
-    style.close()
+    file = open(wd + 'style.css', 'r')
+    css = file.read()
+    file.close()
     # set base domain for images, prepend the css template, and add the search results
-    result = '<base href="https://duckduckgo.com/">' + '<style>'+css+'</style>' + result
+    result = '<base href="https://duckduckgo.com/">' + '<style>' + css + '</style>' + result
 
     # parse and prettify the result
     soup = BeautifulSoup(result,features="html5lib").prettify()
-    ##soup = BeautifulSoup(result,features="html.parser").prettify()
 
     # now actually write
     file = open(wd + 'output.html', 'w')
@@ -253,7 +252,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
 # config file or settings not found
 else:
-  # first runtime, ask user some questions to set up config file
+  # assume this is the first runtime. ask user some questions to set up config file
   print("\nBefore pddgnimi can be used, you need to set up a connection to a SMTP server to send e-mail alerts.")
   print("Please enter your settings below.\n")
   
@@ -266,7 +265,7 @@ else:
   mailserverUser = input("Username/address (e.g. authaddress@somewhere.com): ")
   mailserverPass = getpass.getpass("Account password: ")
 
-  # test settings
+  # test settings work before writing them to a config file
   try:
     message = email.message.Message()
     message["Subject"] = "pddgnimi: SMTP Test"
@@ -285,15 +284,15 @@ else:
     print('Error:', errorMessage)
     exit()
 
-  # connection successful
-  # obfuscate login password using base85-encoded bytes (https://docs.python.org/3/library/base64.html)
+  # test successful, now create config file
+  # first obfuscate the SMTP login password using base85-encoded bytes (https://docs.python.org/3/library/base64.html)
   mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'),pad=True)
-  # now create structure of variables to build config file
+  # create structure of variables to build config file
   config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'pass': mailserverPassEncoded.decode('utf-8')}
   # write the settings to configFile
   with open(configFile, 'w') as saveConfig:
     config.write(saveConfig)
-  # now chmod the configFile 400, so only the owner has read permission
+  # chmod the configFile 400, so only the owner has read permission
   os.chmod(configFile, stat.S_IRUSR)
 
   # done setting up
