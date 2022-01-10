@@ -6,6 +6,7 @@
 try:
   import sys # for getting vars from commandline
   import os # for working with files
+  import stat # for file permissions
   import pathlib # for getting working directory
   import configparser # to work with settings
   import getpass # handling password user input
@@ -285,8 +286,10 @@ else:
   # connection successful, now create structure of variables to build config file
   config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'pass': mailserverPass}
   # write the settings to configFile
-  with open(configFile, 'w') as configFile:
-    config.write(configFile)
+  with open(configFile, 'w') as saveConfig:
+    config.write(saveConfig)
+  # now chmod the configFile 400, so only the owner has read permission
+  os.chmod(configFile, stat.S_IRUSR)
 
   # done setting up
   print("\nConfiguration successful. You're now ready to start scraping!")
