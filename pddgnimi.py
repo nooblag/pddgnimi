@@ -9,7 +9,6 @@ try:
   import pathlib # for getting working directory
   import configparser # to work with settings
   import getpass # handling password user input
-  import keyring # for interacting with local user keyring
   import secrets # for generating keys
   import elemental # wrapper for selenium
   import traceback # to trace errors
@@ -61,15 +60,9 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
   config.read(configFile)
   mailserverHost = config['SMTP']['host']
   mailserverPort = config['SMTP']['port']
-  keystoreToken = config['SMTP']['token']
-  keystoreKey = config['SMTP']['key']
-  # try to build these variables by interacting with the keystore
-  try:
-    mailserverUser = keyring.get_password('pddgnimi', keystoreToken)
-    mailserverPass = keyring.get_password('pddgnimi', keystoreKey)
-  except:
-    print('Could not get required SMTP login from your password keyring. Are you sure the keyring is available?')
-    exit()
+  mailserverUser = config['SMTP']['user']
+  mailserverPass = config['SMTP']['pass']
+  
 
     
 
@@ -289,20 +282,11 @@ else:
     print('Error:', errorMessage)
     exit()
 
-  # connection successful
-  # generate some IDs to use as references to write to the system user account's keystore
-  keystoreToken =  secrets.token_urlsafe()
-  keystoreKey =  secrets.token_urlsafe()
-  # now create structure of variables to build config file
-  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'token': keystoreToken, 'key': keystoreKey}
+  # connection successful, now create structure of variables to build config file
+  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'pass': mailserverPass}
   # write the settings to configFile
   with open(configFile, 'w') as configFile:
     config.write(configFile)
-
-  # write the SMTP username into the user account's keyring by saving it as a 'password' under the keystoreToken ID
-  keyring.set_password('pddgnimi', keystoreToken, mailserverUser)
-  # write the password for that account into its own store on the keyring but this time under the keystoreKey ID
-  keyring.set_password('pddgnimi', keystoreKey, mailserverPass)
 
   # done setting up
   print("\nConfiguration successful. You're now ready to start scraping!")
