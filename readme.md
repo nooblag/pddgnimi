@@ -42,7 +42,7 @@ Start the script for the first time to set up the details for the SMTP server th
 python3 pddgnimi.py
 ```
 
-The script will then save that configuration into `./settings.conf`
+The script will then save that configuration into `./settings.conf` so it is persistent between reboots, and only accessible to the user running the cronjob.
 
 
 ## Usage
