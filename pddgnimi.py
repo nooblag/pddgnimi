@@ -54,6 +54,7 @@ moment = 1
 
 # if config file exists, and is a non-empty file, try to use it
 if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.getsize(configFile) == 0:
+
     # read config file in sections
     config.read(configFile)
     mailserverHost = config['SMTP']['host']
@@ -61,9 +62,9 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     mailserverUser = config['SMTP']['user']
     mailserverPass = config['SMTP']['pass']
 
-    # check settings aren't empty
-    if not mailserverHost.strip() or not mailserverPort.strip() or not mailserverUser.strip() or not mailserverPass.strip():
-      print('A SMTP configuration string is empty. Please check ' + configFile)
+    # ensure required minimum settings aren't empty before continuing
+    if not mailserverHost.strip() or not mailserverUser.strip() or not mailserverPass.strip():
+      print('A required SMTP configuration string is empty. Please check ' + configFile)
       exit()
 
 
