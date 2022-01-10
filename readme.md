@@ -9,12 +9,6 @@ For example, here's an e-mail alert for "celebrity news":
 ![Screenshot from 2022-01-10 22-07-24](https://user-images.githubusercontent.com/1122344/148756507-2765c8dc-13a4-48d7-9c5f-8d66c7e093f9.png)
 
 
-**Under development!**
-
-`develop` branch is fiddling, and this thing probably doesn't work as well as it should... It's the first thing I've ever written in Python...
-
-You've been warned! ;)
-
 
 ## Installation
 
@@ -50,6 +44,7 @@ python3 pddgnimi.py "foo bar" emailaddress@somewhere.com
 ```
 
 Where `foo bar` is your search query, and `emailaddress@somewhere.com` is the address to send the alert to.
+
 
 ### Changing Scope
 
