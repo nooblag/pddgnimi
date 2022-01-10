@@ -10,6 +10,7 @@ try:
   import pathlib # for getting working directory
   import configparser # to work with settings
   import getpass # handling password user input
+  import base64 # for some obfuscation
   import elemental # wrapper for selenium
   import traceback # to trace errors
   import smtplib # for SMTP connection
@@ -20,7 +21,7 @@ try:
   import email.message # used in plain text e-mail test during setup
   import email.utils # used in plain text e-mail test during setup
   from bs4 import BeautifulSoup # for prettifying HTML
-  from time import sleep # use to slow things down even more
+  from time import sleep # used to slow things down even more
   from email.mime.multipart import MIMEMultipart # for HTML e-mails
   from email.mime.text import MIMEText # for HTML e-mails
 except Exception as errorMessage:
@@ -41,8 +42,9 @@ wd = pathlib.Path(__file__).parent.absolute()
 wd = os.path.join(wd, '')
 
 # define config file
-config = configparser.ConfigParser()
 configFile = wd + 'settings.conf'
+# set up config file structure parsing
+config = configparser.ConfigParser()
 
 # 1 second wait time
 moment = 1
@@ -62,7 +64,8 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
   mailserverPort = config['SMTP']['port']
   mailserverUser = config['SMTP']['user']
   mailserverPass = config['SMTP']['pass']
-  
+  # overwrite string to decode password obfuscation and transform the result from decoded bytes
+  mailserverPass = base64.b85decode(mailserverPass).decode('utf-8')  
 
     
 
@@ -282,8 +285,11 @@ else:
     print('Error:', errorMessage)
     exit()
 
-  # connection successful, now create structure of variables to build config file
-  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'pass': mailserverPass}
+  # connection successful
+  # obfuscate login password using base85-encoded bytes (https://docs.python.org/3/library/base64.html)
+  mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'),pad=True)
+  # now create structure of variables to build config file
+  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'pass': mailserverPassEncoded.decode('utf-8')}
   # write the settings to configFile
   with open(configFile, 'w') as saveConfig:
     config.write(saveConfig)
