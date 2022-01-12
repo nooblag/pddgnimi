@@ -36,13 +36,13 @@ sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
 
 ### Configuration
 
-Start the script for the first time to set up the details for the SMTP server that will be used to send your e-mail alerts.
+Start **pddgnimi** for the first time to set up the details for the SMTP server that will be used to send your e-mail alerts.
 
 ```bash
 python3 pddgnimi.py
 ```
 
-The script will then save that configuration into `./settings.conf` so it is persistent between reboots, and only accessible to the user running the cronjob.
+The script will then save your configuration into `./settings.conf` so it is persistent between reboots, and is only accessible from within your user account (or by root).
 
 
 ## Usage
