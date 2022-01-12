@@ -11,8 +11,6 @@ try:
   import configparser # to work with settings
   import getpass # handling password user input
   import base64 # for some obfuscation
-  import hashlib # obfuscation
-  import secrets # obfuscation
   import elemental # wrapper for selenium
   import traceback # to trace errors
   import smtplib # for SMTP connection
@@ -57,18 +55,6 @@ moment = 1
 
 ### SETUP ###
 
-# function to hash the binary contents of a garbage file to use as a tiny checksum
-def garbageKey():
-  blocksize = 65536
-  hasher = hashlib.sha1()
-  with open('.garbage', 'rb') as afile:
-    buffer = afile.read(blocksize)
-    while len(buffer) > 0:
-      hasher.update(buffer)
-      buffer = afile.read(blocksize)
-  return hasher.hexdigest() + ':'
-
-
 # prepare to check if an argument is a properly formatted e-mail address
 def email_error_notify():
   print('Please enter a valid e-mail address as an argument with your search query.')
@@ -93,7 +79,7 @@ def testemail(address):
 
 
 
-### GUTS ###
+### RUNTIME ###
 
 # if config file exists, and is a non-empty file, try to use it
 if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.getsize(configFile) == 0:
@@ -146,9 +132,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
 
 
-
-
-  ### SCRAPING ###
+  ### scraping ###
 
   try: 
     # open browser window
@@ -201,9 +185,8 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
 
 
-    ### DUMP TO FILE ###
-    # prepare to write results to a file
-    
+    ### dump to file ###
+        
     # minify filter what we have so far in order to get things consistent for find/replace below
     result = htmlmin.minify(searchResults)
     
@@ -229,7 +212,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     
 
 
-    ### SEND EMAIL ###
+    ### send e-mail ###
 
     # if we have some results, send e-mail alert
     if not 'No news articles found for' in soup:
@@ -257,7 +240,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
 
   finally:
-    ### CLEAN UP ###
+    ### cleanup ###
     if browser:
       # close browser
       browser.quit()
@@ -311,7 +294,7 @@ else:
   # write the settings to configFile
   with open(configFile, 'w') as saveConfig:
     config.write(saveConfig)
-  # chmod the configFile 400, so only the owner can see the contents of the file
+  # chmod the configFile 400, so only the owner can see the contents of the file. that should also help a bit ;)
   os.chmod(configFile, stat.S_IRUSR)
 
   # done setting up
