@@ -6,7 +6,7 @@ This thing should scrape news articles from [DuckDuckGo](https://duckduckgo.com/
 
 For example, here's an e-mail alert for "celebrity news":
 
-![Screenshot from 2022-01-10 22-07-24](https://user-images.githubusercontent.com/1122344/148756507-2765c8dc-13a4-48d7-9c5f-8d66c7e093f9.png)
+![Screenshot from 2022-01-13 00-37-40](https://user-images.githubusercontent.com/1122344/149153711-45f59e5a-a77e-487e-ad7f-8bc014a01d7b.png)
 
 
 
