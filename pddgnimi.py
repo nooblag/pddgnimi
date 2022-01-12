@@ -42,7 +42,7 @@ wd = pathlib.Path(__file__).parent.absolute()
 wd = os.path.join(wd, '')
 
 # define config file
-configFile = wd + 'settings.conf'
+configFile = wd + '.settings.conf'
 # set up config file structure parsing
 config = configparser.ConfigParser()
 
