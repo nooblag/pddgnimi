@@ -42,7 +42,7 @@ Start **pddgnimi** for the first time to set up the details for the SMTP server 
 python3 pddgnimi.py
 ```
 
-The script will then save your configuration into `./settings.conf` so it is persistent between reboots, and is only accessible from within your user account (or by root).
+The script will then save your configuration into `.settings.conf` so it is persistent between reboots, and is only accessible from within your user account (or by root).
 
 
 ## Usage
