@@ -4,7 +4,7 @@
 
 This thing should scrape news articles from [DuckDuckGo](https://duckduckgo.com/) for a search query in Australia and send the results to you in an e-mail. It's intended to be invoked as a cronjob so as to get hits on a news topic at intervals of your choosing.
 
-For example, here's an e-mail alert for "celebrity news":
+For example, here's a "past day" e-mail alert for "celebrity news":
 
 ![Screenshot from 2022-01-13 00-37-40](https://user-images.githubusercontent.com/1122344/149153711-45f59e5a-a77e-487e-ad7f-8bc014a01d7b.png)
 
