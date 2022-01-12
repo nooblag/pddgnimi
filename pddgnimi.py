@@ -11,6 +11,8 @@ try:
   import configparser # to work with settings
   import getpass # handling password user input
   import base64 # for some obfuscation
+  import hashlib # obfuscation
+  import secrets # obfuscation
   import elemental # wrapper for selenium
   import traceback # to trace errors
   import smtplib # for SMTP connection
@@ -55,6 +57,44 @@ moment = 1
 
 ### SETUP ###
 
+# function to hash the binary contents of a garbage file to use as a tiny checksum
+def garbageKey():
+  blocksize = 65536
+  hasher = hashlib.sha1()
+  with open('.garbage', 'rb') as afile:
+    buffer = afile.read(blocksize)
+    while len(buffer) > 0:
+      hasher.update(buffer)
+      buffer = afile.read(blocksize)
+  return hasher.hexdigest() + ':'
+
+
+# prepare to check if an argument is a properly formatted e-mail address
+def email_error_notify():
+  print('Please enter a valid e-mail address as an argument with your search query.')
+  if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
+    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
+  else:
+    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+  exit()
+
+
+# regex an email address supplied as an argument
+def testemail(address):
+  regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+  # now pass regex to fullmatch() method to check
+  if not (re.fullmatch(regex, address)):
+    # print invalid e-mail address in bold and notify
+    print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
+    email_error_notify()
+
+
+
+
+
+
+### GUTS ###
+
 # if config file exists, and is a non-empty file, try to use it
 if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.getsize(configFile) == 0:
   
@@ -63,32 +103,11 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
   mailserverHost = config['SMTP']['host']
   mailserverPort = config['SMTP']['port']
   mailserverUser = config['SMTP']['user']
-  mailserverPass = config['SMTP']['pass']
+  mailserverPass = config['SMTP']['auth']
   # overwrite string to decode password obfuscation and transform the result from decoded bytes
-  mailserverPass = base64.b85decode(mailserverPass).decode('utf-8')  
+  mailserverPass = base64.b85decode(mailserverPass).decode('utf-8')
 
-    
-
-
-
-  ### ENVIRONMENT ###
-
-  # prepare to check if an argument is a properly formatted e-mail address
-  def email_error_notify():
-    print('Please enter a valid e-mail address as an argument with your search query.')
-    if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
-      print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
-    else:
-      print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-    exit()
-
-  def testemail(address):
-    regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    # now pass regex to fullmatch() method to check
-    if not (re.fullmatch(regex, address)):
-      # print invalid e-mail address in bold and notify
-      print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
-      email_error_notify()
+  ### parse command line arguments ###
 
 
   # search query
@@ -285,14 +304,14 @@ else:
     exit()
 
   # test successful, now create config file
-  # first obfuscate the SMTP login password using base85-encoded bytes (https://docs.python.org/3/library/base64.html)
+  # obfuscate the SMTP login using base85-encoded bytes (https://docs.python.org/3/library/base64.html) so at least its not in plain text!
   mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'),pad=True)
   # create structure of variables to build config file
-  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'pass': mailserverPassEncoded.decode('utf-8')}
+  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'auth': mailserverPassEncoded.decode('utf-8')}
   # write the settings to configFile
   with open(configFile, 'w') as saveConfig:
     config.write(saveConfig)
-  # chmod the configFile 400, so only the owner has read permission
+  # chmod the configFile 400, so only the owner can see the contents of the file
   os.chmod(configFile, stat.S_IRUSR)
 
   # done setting up
