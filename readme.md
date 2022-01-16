@@ -28,10 +28,12 @@ sudo apt update && sudo apt install python3-pip
 # install dependencies
 pip install elemental html5lib htmlmin bs4
 
-# install latest geckodriver for firefox from https://github.com/mozilla/geckodriver/releases/latest
-# put it somewhere like /usr/bin or something else from $PATH
-wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
-sudo tar -xf geckodriver-v0.30.0-linux64.tar.gz --directory /usr/bin/
+# ensure geckodriver for firefox is installed (https://github.com/mozilla/geckodriver/releases/latest)
+tmpPath="$(mktemp --directory)"
+# download version 0.30.0 into tmpPath
+wget --directory-prefix="${tmpPath}" https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
+# extract the driver to somewhere like /usr/bin or something; use first entry in $PATH
+# sudo tar -xf "${tmpPath}/geckodriver-v0.30.0-linux64.tar.gz" --directory "${PATH%%:*}"
 ```
 
 ### Configuration
