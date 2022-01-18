@@ -12,39 +12,23 @@ For example, here's a "past day" e-mail alert for "celebrity news":
 
 ## Installation
 
-### Dependencies
-
-- [elemental](https://github.com/red-and-black/elemental)
-- [geckodriver](https://github.com/mozilla/geckodriver/releases/latest) for Firefox
-- `html5lib` for parsing HTML
-- `htmlmin` for minifying HTML
-- `bs4` BeautifulSoup to prettify HTML
-
+Clone this repo, and jump into it:
 
 ```bash
-# may need to install python package manager
-sudo apt update && sudo apt install python3-pip
-
-# install dependencies
-pip install elemental html5lib htmlmin bs4
-
-# ensure geckodriver for firefox is installed (https://github.com/mozilla/geckodriver/releases/latest)
-tmpPath="$(mktemp --directory)"
-# download version 0.30.0 into tmpPath
-wget --directory-prefix="${tmpPath}" https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz
-# extract the driver to somewhere like /usr/bin or something; use first entry in $PATH
-# sudo tar -xf "${tmpPath}/geckodriver-v0.30.0-linux64.tar.gz" --directory "${PATH%%:*}"
+git clone https://github.com/nooblag/pddgnimi.git
+cd pddgnimi
 ```
 
-### Configuration
-
-Start **pddgnimi** for the first time to set up the details for the SMTP server that will be used to send your e-mail alerts.
+Start **pddgnimi** to check that your system has the required software ready, and to save the details for the SMTP server that will be used later to send out all your e-mail alerts:
 
 ```bash
 python3 pddgnimi.py
 ```
 
-The script will then save your configuration into `.settings.conf` so it is persistent between reboots, and is only accessible from within your user account (or by root).
+**pddgnimi** will save a successful configuration into `.settings.conf` so that the SMTP login is available/persistent between reboots. The configuration is locked (chmod 400) during set-up so that its contents are only be readable from within your user account (or by root).
+
+_Note:_ The mailserver password is not encrypted in the configuration file (it's obfuscated, but that's small comfort) so be aware not to use a sensitive account!!!
+
 
 
 ## Usage
@@ -56,6 +40,7 @@ python3 pddgnimi.py "foo bar" emailaddress@somewhere.com
 ```
 
 Where `foo bar` is your search query, and `emailaddress@somewhere.com` is the address to send the alert to.
+
 
 
 ### Changing Scope
