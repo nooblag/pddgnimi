@@ -256,7 +256,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     soup = BeautifulSoup(result,features="html5lib").prettify()
 
     # now actually write
-    file = open(wd + 'output.html', 'w')
+    file = open(wd + '.output.html', 'w')
     file.write(soup)
     file.close()
     
