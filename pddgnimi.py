@@ -26,8 +26,58 @@ try:
   from email.mime.text import MIMEText # for HTML e-mails
 except Exception as errorMessage:
   print('Error:', errorMessage)
-  # suggest how to fix missing packages. yellow colour using ANSI escape codes
-  print('Have you run ' + '\033[93m' + 'pip install elemental html5lib htmlmin bs4' + '\033[00m' + ' ?')
+  print("\nBefore pddgnimi can be used, your system may need some software installed:")
+  bashinstall = """
+    # stop on any non-zero exit status
+    set -o errexit
+    # test if pip is available
+    if [ ! -x "$(command -v pip)" ]; then
+      # attempt to install it
+      pip='python3-pip'
+      # try to guess some common package managers to do the install
+      # ubuntu/debian types
+      if [ -x "$(command -v apt)" ]; then
+        installer="sudo apt update && sudo apt install ${pip}"
+        printf "%s\n\n" "$installer"
+        eval "${installer}"
+      # fedora types
+      elif [ -x "$(command -v dnf)" ]; then
+        installer="sudo dnf install ${pip}"
+        printf "%s\n\n" "$installer"
+        eval "${installer}"
+      # alpine-ish
+      elif [ -x "$(command -v apk)" ]; then
+        installer="sudo apk add --no-cache ${pip}"
+        printf "%s\n\n" "$installer"
+        eval "${installer}"
+      else
+        printf "%s\n\n" "$pip" >&2
+        exit 1
+      fi
+    fi
+    # ensure python dependencies are installed
+    pip install elemental html5lib htmlmin bs4
+    # ensure geckodriver for firefox is installed (https://github.com/mozilla/geckodriver/releases/latest)
+    # get the file and put it in a temp directory
+    tmpPath="$(mktemp --directory)"
+    # download version 0.30.0 into the tmpPath
+    geckoVersion='0.30.0'
+    geckodriverFile="geckodriver-v${geckoVersion}-linux64.tar.gz" # assumes x86_64 systems, will need fixing for arm and other possible deployments
+    wget --quiet --directory-prefix="${tmpPath}" "https://github.com/mozilla/geckodriver/releases/download/v${geckoVersion}/${geckodriverFile}"
+    if [ -s "${tmpPath}/${geckodriverFile}" ]; then
+      # extract the driver to somewhere like /usr/bin or something; use first entry in $PATH
+      firstPath="${PATH%%:*}"
+      echo "Extracting geckodriver to $firstPath"
+      sudo tar -xf "${tmpPath}/${geckodriverFile}" --directory "$firstPath"
+    else
+      printf "Failed to install geckodriver." >&2
+      exit 1
+    fi
+    # doing above with pip might be helpful instead! https://pypi.org/project/webdriver-manager/ ### ! ###
+    printf "Software check complete.\n\n"
+  """
+  # run the above bash installer
+  os.system(bashinstall)
   exit()
 
 
@@ -75,6 +125,56 @@ def testemail(address):
     email_error_notify()
 
 
+# make config file
+def makeConfig():
+  # ask user some questions to set up config file
+  print("\nBefore pddgnimi can be used, you need to set up a connection to a SMTP server to send e-mail alerts.")
+  print("Please enter your settings below.\n")
+  
+  # create a section for SMTP settings
+  config['SMTP'] = {}
+
+  # now ask user for each setting
+  mailserverHost = input("SMTP Hostname (e.g. smtp.somewhere.com): ")
+  mailserverPort = input("Server Port (e.g. 465 for TLS): ")
+  mailserverUser = input("Username/address (e.g. authaddress@somewhere.com): ")
+  mailserverPass = getpass.getpass("Account password: ")
+
+  # test settings work before writing them to a config file
+  try:
+    message = email.message.Message()
+    message["Subject"] = "pddgnimi: SMTP Test"
+    message["From"] = mailserverUser
+    message["To"] = mailserverUser
+    message.add_header('Content-Type', 'text')
+    message.set_payload("This is a test message.")
+    # open TLS connection and send
+    with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
+      mailserver.ehlo()
+      mailserver.login(mailserverUser, mailserverPass)
+      mailserver.sendmail(mailserverUser, mailserverUser, message.as_string())
+      mailserver.quit()
+  except Exception as errorMessage:
+    print("\nThere was a problem sending e-mail with the SMTP settings provided. Are you sure all the details are correct and that the server is up?")
+    print('Error:', errorMessage)
+    exit()
+
+  # test successful, now create config file
+  # obfuscate the SMTP login using base85-encoded bytes (https://docs.python.org/3/library/base64.html) so at least its not in plain text!
+  mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'),pad=True)
+  # create structure of variables to build config file
+  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'auth': mailserverPassEncoded.decode('utf-8')}
+  # write the settings to configFile
+  with open(configFile, 'w') as saveConfig:
+    config.write(saveConfig)
+  # chmod the configFile 400, so only the owner can see the contents of the file. that should also help a bit ;)
+  os.chmod(configFile, stat.S_IRUSR)
+
+  # done setting up
+  print("\nConfiguration successful. You're now ready to start scraping!")
+  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+  exit()
+
 
 
 
@@ -83,7 +183,7 @@ def testemail(address):
 
 # if config file exists, and is a non-empty file, try to use it
 if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.getsize(configFile) == 0:
-  
+
   # read config file in sections
   config.read(configFile)
   mailserverHost = config['SMTP']['host']
@@ -93,8 +193,8 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
   # overwrite string to decode password obfuscation and transform the result from decoded bytes
   mailserverPass = base64.b85decode(mailserverPass).decode('utf-8')
 
-  ### parse command line arguments ###
 
+  ### parse command line arguments ###
 
   # search query
   if len(sys.argv) > 1:
@@ -104,7 +204,6 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     print('Please enter search query as an argument.')
     print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
     exit()
-
 
   # query scope (i.e. get news articles from past day, week, month; or any time) OR e-mail address to send alerts to
   if len(sys.argv) > 2:
@@ -254,50 +353,5 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
 # config file or settings not found
 else:
-  # assume this is the first runtime. ask user some questions to set up config file
-  print("\nBefore pddgnimi can be used, you need to set up a connection to a SMTP server to send e-mail alerts.")
-  print("Please enter your settings below.\n")
-  
-  # create a section for SMTP settings
-  config['SMTP'] = {}
-
-  # now ask user for each setting
-  mailserverHost = input("SMTP Hostname (e.g. smtp.somewhere.com): ")
-  mailserverPort = input("Server Port (e.g. 465 for TLS): ")
-  mailserverUser = input("Username/address (e.g. authaddress@somewhere.com): ")
-  mailserverPass = getpass.getpass("Account password: ")
-
-  # test settings work before writing them to a config file
-  try:
-    message = email.message.Message()
-    message["Subject"] = "pddgnimi: SMTP Test"
-    message["From"] = mailserverUser
-    message["To"] = mailserverUser
-    message.add_header('Content-Type', 'text')
-    message.set_payload("This is a test message.")
-    # open TLS connection and send
-    with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-      mailserver.ehlo()
-      mailserver.login(mailserverUser, mailserverPass)
-      mailserver.sendmail(mailserverUser, mailserverUser, message.as_string())
-      mailserver.quit()
-  except Exception as errorMessage:
-    print("\nThere was a problem sending e-mail with the SMTP settings provided. Are you sure all the details are correct and that the server is up?")
-    print('Error:', errorMessage)
-    exit()
-
-  # test successful, now create config file
-  # obfuscate the SMTP login using base85-encoded bytes (https://docs.python.org/3/library/base64.html) so at least its not in plain text!
-  mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'),pad=True)
-  # create structure of variables to build config file
-  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'auth': mailserverPassEncoded.decode('utf-8')}
-  # write the settings to configFile
-  with open(configFile, 'w') as saveConfig:
-    config.write(saveConfig)
-  # chmod the configFile 400, so only the owner can see the contents of the file. that should also help a bit ;)
-  os.chmod(configFile, stat.S_IRUSR)
-
-  # done setting up
-  print("\nConfiguration successful. You're now ready to start scraping!")
-  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-  exit()
+  # assume this is the first runtime.
+  makeConfig()
