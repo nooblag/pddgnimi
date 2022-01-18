@@ -6,5 +6,5 @@ geckodriver.log
 __pycache__
 
 # ignore temporary output
-output.html
+.output.html
 
