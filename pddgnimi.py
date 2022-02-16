@@ -45,11 +45,7 @@ except Exception as errorMessage:
         installer="sudo dnf install ${pip}"
         printf "%s\n\n" "$installer"
         eval "${installer}"
-      # alpine-ish
-      elif [ -x "$(command -v apk)" ]; then
-        installer="sudo apk add --no-cache ${pip}"
-        printf "%s\n\n" "$installer"
-        eval "${installer}"
+      # can't assume a package manager
       else
         printf "%s\n\n" "$pip" >&2
         exit 1
