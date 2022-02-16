@@ -31,9 +31,8 @@ except Exception as errorMessage:
     # stop on any non-zero exit status
     set -o errexit
 
-    # test if pip is available
+    # check to see if pip is absent, if so, attempt to install it
     if [ ! -x "$(command -v pip)" ]; then
-      # attempt to install it
       pip='python3-pip'
       # try to guess some common package managers to do the install
       # ubuntu/debian types
@@ -41,7 +40,7 @@ except Exception as errorMessage:
         installer="sudo apt update && sudo apt install ${pip}"
         printf "%s\n\n" "$installer"
         eval "${installer}"
-      # fedora types
+      # fedora/centos types
       elif [ -x "$(command -v dnf)" ]; then
         installer="sudo dnf install ${pip}"
         printf "%s\n\n" "$installer"
@@ -60,10 +59,9 @@ except Exception as errorMessage:
     # ensure python dependencies are installed
     pip install elemental html5lib htmlmin bs4
 
-    # test if geckodriver is available
+    # check to see if geckodriver is absent, if so, attempt to install it
     # doing this with pip/webdriver_manager might be better in future (https://pypi.org/project/webdriver-manager)
     if [ ! -x "$(command -v geckodriver)" ]; then
-      # attempt to install it
       # get the file (https://github.com/mozilla/geckodriver/releases/latest) and put it in a temp directory
       tmpPath="$(mktemp --directory)"
       # download version 0.30.0 into the tmpPath
