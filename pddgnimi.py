@@ -293,6 +293,8 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     # remove junk span tags and text from throughout the search results
     find = "<span class=result__check__tt>Your browser indicates if you've visited this link</span>"
     result = re.sub(find, '', result)
+    find = '<a class="result--more__btn btn btn--full">Load More</a>'
+    result = re.sub(find, '', result)
     
     # apply basic styling to the result from template
     # get the template
