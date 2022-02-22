@@ -20,6 +20,7 @@ try:
   import re # for find/replace and regex to verify e-mail address format
   import email.message # used in plain text e-mail test during setup
   import email.utils # used in plain text e-mail test during setup
+  import geckodriver_autoinstaller # handle driver presence for firefox
   from bs4 import BeautifulSoup # for prettifying HTML
   from time import sleep # used to slow things down even more
   from email.mime.multipart import MIMEMultipart # for HTML e-mails
@@ -53,27 +54,7 @@ except Exception as errorMessage:
     fi
 
     # ensure python dependencies are installed
-    pip install elemental html5lib htmlmin bs4
-
-    # check to see if geckodriver is absent, if so, attempt to install it
-    # doing this with pip/webdriver_manager might be better in future (https://pypi.org/project/webdriver-manager)
-    if [ ! -x "$(command -v geckodriver)" ]; then
-      # get the file (https://github.com/mozilla/geckodriver/releases/latest) and put it in a temp directory
-      tmpPath="$(mktemp --directory)"
-      # download version 0.30.0 into the tmpPath
-      geckoVersion='0.30.0' # should probably work out a dynamic way to get github release assets rather than 'hardcoding'
-      geckodriverFile="geckodriver-v${geckoVersion}-linux64.tar.gz" # assumes x86_64 systems, will need fixing for arm and other possible deployments
-      wget --quiet --directory-prefix="${tmpPath}" "https://github.com/mozilla/geckodriver/releases/download/v${geckoVersion}/${geckodriverFile}"
-      if [ -s "${tmpPath}/${geckodriverFile}" ]; then
-        # extract the driver to somewhere like /usr/bin or something---use first entry in $PATH
-        firstPath="${PATH%%:*}"
-        echo "Extracting geckodriver to $firstPath"
-        sudo tar -xf "${tmpPath}/${geckodriverFile}" --directory "$firstPath"
-      else
-        printf "Failed to install geckodriver." >&2
-        exit 1
-      fi
-    fi
+    pip install elemental html5lib htmlmin bs4 geckodriver_autoinstaller
 
     printf "Software check complete.\n\n"
   """
@@ -234,7 +215,9 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
   ### scraping ###
 
-  try: 
+  try:
+    # set up geckodriver
+    geckodriver_autoinstaller.install()
     # open browser window
     browser = elemental.Browser(headless=True)
     # ensure browser window viewport is consistently big
