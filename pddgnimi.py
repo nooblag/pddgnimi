@@ -151,7 +151,7 @@ def makeConfig():
 
   # done setting up
   print("\nConfiguration successful. You're now ready to start scraping!")
-  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com\n')
   exit()
 
 
