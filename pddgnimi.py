@@ -31,19 +31,18 @@ except Exception as errorMessage:
   bashInstall = """
     # stop on any non-zero exit status
     set -o errexit
-
     # check to see if pip is absent, if so, attempt to install it
     if [ ! -x "$(command -v pip)" ]; then
       pip='python3-pip'
       # try to guess some common package managers to do the install
-      # ubuntu/debian types
+      # debian/ubuntu types
       if [ -x "$(command -v apt)" ]; then
         installer="sudo apt update && sudo apt install ${pip}"
         printf "%s\n\n" "$installer"
         eval "${installer}"
       # fedora/centos types
       elif [ -x "$(command -v dnf)" ]; then
-        installer="sudo dnf install ${pip}"
+        installer="sudo dnf update && sudo dnf install ${pip}"
         printf "%s\n\n" "$installer"
         eval "${installer}"
       # can't assume a package manager
@@ -52,10 +51,8 @@ except Exception as errorMessage:
         exit 1
       fi
     fi
-
     # ensure python dependencies are installed
     pip install elemental html5lib htmlmin bs4 geckodriver_autoinstaller
-
     printf "Software check complete.\n\n"
   """
   # run bash installer
@@ -63,7 +60,7 @@ except Exception as errorMessage:
   exit()
 
 
-
+  
 
 
 ### CONFIG ###
