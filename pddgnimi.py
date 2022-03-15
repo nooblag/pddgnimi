@@ -38,16 +38,16 @@ except Exception as errorMessage:
       # debian/ubuntu types
       if [ -x "$(command -v apt)" ]; then
         installer="sudo apt update && sudo apt install ${pip}"
-        printf "%s\n\n" "$installer"
+        printf "%s\n\n" "${installer}"
         eval "${installer}"
       # fedora/centos types
       elif [ -x "$(command -v dnf)" ]; then
         installer="sudo dnf update && sudo dnf install ${pip}"
-        printf "%s\n\n" "$installer"
+        printf "%s\n\n" "${installer}"
         eval "${installer}"
       # can't assume a package manager
       else
-        printf "%s\n\n" "$pip" >&2
+        printf "%s\n\n" "${pip}" >&2
         exit 1
       fi
     fi
