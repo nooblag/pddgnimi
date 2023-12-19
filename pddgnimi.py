@@ -136,7 +136,7 @@ def makeConfig():
 
   # test successful, now create config file
   # obfuscate the SMTP login using base85-encoded bytes (https://docs.python.org/3/library/base64.html) so at least its not in plain text!
-  mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'),pad=True)
+  mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'))
   # create structure of variables to build config file
   config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'auth': mailserverPassEncoded.decode('utf-8')}
   # write the settings to configFile
@@ -218,12 +218,16 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
         max_results = 10
       )
 
+      # set up the containers/testers
       output = []
+      output_trigger = False
+
       # create the page and results wrapper
       output.append('<div class="results--main">')
       output.append('<div class="results js-vertical-results">')
 
       for result in results:
+        output_trigger = True
         # start with wrapper
         output.append('<div class="result result--news result--img result--url-above-snippet">')
         output.append('<div class="result__body">')
@@ -270,25 +274,25 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
       file.write(results)
       file.close()
 
+      if output_trigger:
+        ### send e-mail ###
+        message = MIMEMultipart("alternative")
+        message["Subject"] = "pddgnimi: " + searchQuery
+        message["From"] = mailserverUser
+        message["To"] = emailto
+        # turn the results output from above into html MIMEText object
+        emailbody = MIMEText(results, "html")
+        # add the MIME part to the message
+        message.attach(emailbody)
+        # open TLS connection and send
+        with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
+          mailserver.ehlo()
+          mailserver.login(mailserverUser, mailserverPass)
+          mailserver.sendmail(mailserverUser, emailto, message.as_string())
+          mailserver.quit()
+      else:
+        print('No results.')
 
-
-    ### send e-mail ###
-
-    # set up a html e-mail
-    message = MIMEMultipart("alternative")
-    message["Subject"] = "pddgnimi: " + searchQuery
-    message["From"] = mailserverUser
-    message["To"] = emailto
-    # turn the results output from above into html MIMEText object
-    emailbody = MIMEText(results, "html")
-    # add the MIME part to the message
-    message.attach(emailbody)
-    # open TLS connection and send
-    with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-      mailserver.ehlo()
-      mailserver.login(mailserverUser, mailserverPass)
-      mailserver.sendmail(mailserverUser, emailto, message.as_string())
-      mailserver.quit()
 
 
   except:
