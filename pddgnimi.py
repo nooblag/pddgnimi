@@ -241,13 +241,17 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
         # start wrapper for metadata
         output.append('<div class="result__extras">')
+        # show which media outlet
+        output.append('<div class="result__extras__url">' + result['source'])
+        # break
+        output.append('<span class="result__extras__sep"> | </span>')
         # try to prettify date
         # hardcode the format for now
         ddg_timestamp = datetime.datetime.strptime(result['date'], '%Y-%m-%dT%H:%M:%S+00:00')
         now = datetime.datetime.now()
         delta = now - ddg_timestamp
         timestamp = '%d hours ago' % (delta.seconds/60/60)
-        output.append('<div class="result__extras__url"><span class="result__timestamp">' + timestamp + '</span></div>')
+        output.append('<span class="result__timestamp">' + timestamp + '</span></div>')
         output.append('</div>')
 
         # description
