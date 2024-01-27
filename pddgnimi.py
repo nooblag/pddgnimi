@@ -11,18 +11,20 @@ try:
   import configparser # to work with settings
   import getpass # handling password user input
   import base64 # for some obfuscation
+  import elemental # wrapper for selenium
   import traceback # to trace errors
   import smtplib # for SMTP connection
   import ssl # for TLS over SMTP
   import html5lib # for handling HTML5
-  import json # for converting search results into html blocks
-  import datetime # to prettify timestamps
+  import htmlmin # for minifying HTML
   import re # for find/replace and regex to verify e-mail address format
   import email.message # used in plain text e-mail test during setup
   import email.utils # used in plain text e-mail test during setup
+  import geckodriver_autoinstaller # handle driver presence for firefox
+  from bs4 import BeautifulSoup # for prettifying HTML
+  from time import sleep # used to slow things down even more
   from email.mime.multipart import MIMEMultipart # for HTML e-mails
   from email.mime.text import MIMEText # for HTML e-mails
-  from duckduckgo_search import DDGS
 except Exception as errorMessage:
   print('Error:', errorMessage)
   print("\nBefore pddgnimi can be used, your system may need some software installed:")
@@ -50,7 +52,7 @@ except Exception as errorMessage:
       fi
     fi
     # ensure python dependencies are installed
-    pip install html5lib duckduckgo_search
+    pip install elemental html5lib htmlmin bs4 geckodriver_autoinstaller
     printf "Software check complete.\n\n"
   """
   # run bash installer
@@ -73,6 +75,8 @@ configFile = wd + '.settings.conf'
 # set up config file structure parsing
 config = configparser.ConfigParser()
 
+# 1 second wait time
+moment = 1
 
 
 
@@ -209,94 +213,106 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
   ### scraping ###
 
   try:
-    with DDGS() as search:
-      results = search.news(
-        searchQuery,
-        region = "au-en",
-        safesearch = "off",
-        timelimit = scope[0], # use first character only (i.e. 'd' 'w' 'm' etc)
-        max_results = 10
-      )
+    # set up geckodriver
+    geckodriver_autoinstaller.install()
+    # open browser window
+    browser = elemental.Browser(headless=True)
+    # ensure browser window viewport is consistently big
+    browser.selenium_webdriver.set_window_size(1920,1080)
 
-      # set up the containers/testers
-      output = []
-      output_trigger = False
+    # go to start.duckduckgo.com for consistent barebones search layout
+    browser.visit("https://start.duckduckgo.com")
 
-      # create the page and results wrapper
-      output.append('<div class="results--main">')
-      output.append('<div class="results js-vertical-results">')
+    # find the search box and type in the query using fill
+    browser.get_element(id="search_form_input_homepage").fill(searchQuery)
 
-      for result in results:
-        output_trigger = True
-        # start with wrapper
-        output.append('<div class="result result--news result--img result--url-above-snippet">')
-        output.append('<div class="result__body">')
+    # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts
+    sleep(moment)
+    browser.get_element(id="search_button_homepage", wait=moment).click()
 
-        if result['image']:
-          output.append('<div class="result__image js-result-image-wrapper">')
-          output.append('<div class="result__image__plc ddgsi ddgsi-news js-result-img-placeholder" style="display: none;"></div><img class="result__image__img js-result-image" src="' + result['image'] +'"></div>')
+    # now in search results, refine our search to be news articles only
+    sleep(moment)
+    browser.get_element(id="duckbar_static").get_element(text="News", wait=moment).click()
 
-        # title
-        output.append('<h2 class="result__title"><a class="result__a" rel="noopener" href="' + result['url'] + '">' + result['title'] + '</a></h2>')
+    # click on the region dropdown menu and ensure it is set to Australia
+    sleep(moment)
+    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--region", wait=moment).click()
+    sleep(moment)
+    browser.get_element(text="Australia", wait=moment).click()
 
-        # start wrapper for metadata
-        output.append('<div class="result__extras">')
-        # show which media outlet
-        output.append('<div class="result__extras__url">' + result['source'])
-        # break
-        output.append('<span class="result__extras__sep"> | </span>')
-        # try to prettify date
-        # hardcode the format for now
-        ddg_timestamp = datetime.datetime.strptime(result['date'], '%Y-%m-%dT%H:%M:%S+00:00')
-        now = datetime.datetime.now()
-        delta = now - ddg_timestamp
-        timestamp = '%d hours ago' % (delta.seconds/60/60)
-        output.append('<span class="result__timestamp">' + timestamp + '</span></div>')
-        output.append('</div>')
+    # turn safe search off
+    sleep(moment)
+    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--safe-search", wait=moment).click()
+    sleep(moment)
+    browser.get_element(text="Off", wait=moment).click()
 
-        # description
-        output.append('<div class="result__snippet">' + result['body'] + '</div>')
+    # narrow search to be within the specified scope
+    sleep(moment)
+    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--date", wait=moment).click()
+    sleep(moment)
+    if scope == 'any':
+      browser.get_element(text="Any time", wait=moment).click()
+    elif scope == 'week':
+      browser.get_element(text="Past week", wait=moment).click()
+    elif scope == 'month':
+      browser.get_element(text="Past month", wait=moment).click()
+    else:
+      browser.get_element(text="Past day", wait=moment).click()
 
-        # finish up
-        output.append('</div>')
-        output.append('</div>')
+    # now get the column with results only
+    sleep(moment+2) # go mega slow here
+    searchResults = browser.get_element(css="div.results--main div.results.js-vertical-results", wait=moment).html
 
-      # page finished
-      output.append('</div>')
-      output.append('</div>')
 
-      # apply basic styling to the result from template
-      # get the template
-      file = open(wd + 'style.css', 'r')
-      css = file.read()
-      file.close()
-      # set base domain for images, prepend the css template, and add the search results
-      results = '<base href="https://duckduckgo.com/">' + '<style>' + css + '</style>'.join(output)
 
-      # now actually write
-      file = open(wd + '.output.html', 'w')
-      file.write(results)
-      file.close()
+    ### dump to file ###
 
-      if output_trigger:
-        ### send e-mail ###
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "pddgnimi: " + searchQuery
-        message["From"] = mailserverUser
-        message["To"] = emailto
-        # turn the results output from above into html MIMEText object
-        emailbody = MIMEText(results, "html")
-        # add the MIME part to the message
-        message.attach(emailbody)
-        # open TLS connection and send
-        with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-          mailserver.ehlo()
-          mailserver.login(mailserverUser, mailserverPass)
-          mailserver.sendmail(mailserverUser, emailto, message.as_string())
-          mailserver.quit()
-      else:
-        print('No results.')
+    # minify filter what we have so far in order to get things consistent for find/replace below
+    result = htmlmin.minify(searchResults)
 
+    # remove junk span tags and text from throughout the search results
+    find = "<span class=result__check__tt>Your browser indicates if you've visited this link</span>"
+    result = re.sub(find, '', result)
+    find = '<a class="result--more__btn btn btn--full">Load More</a>'
+    result = re.sub(find, '', result)
+
+    # apply basic styling to the result from template
+    # get the template
+    file = open(wd + 'style.css', 'r')
+    css = file.read()
+    file.close()
+    # set base domain for images, prepend the css template, and add the search results
+    result = '<base href="https://duckduckgo.com/">' + '<style>' + css + '</style>' + result
+
+    # parse and prettify the result
+    soup = BeautifulSoup(result,features="html5lib").prettify()
+
+    # now actually write
+    file = open(wd + '.output.html', 'w')
+    file.write(soup)
+    file.close()
+
+
+
+    ### send e-mail ###
+
+    # if we have some results, send e-mail alert
+    if not 'No news articles found for' in soup:
+      # set up a html e-mail
+      message = MIMEMultipart("alternative")
+      message["Subject"] = "pddgnimi: " + searchQuery
+      message["From"] = mailserverUser
+      message["To"] = emailto
+      # turn the soup output from above into html MIMEText object
+      emailbody = MIMEText(soup, "html")
+      # add the MIME part to the message
+      message.attach(emailbody)
+      # open TLS connection and send
+      with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
+        mailserver.ehlo()
+        mailserver.login(mailserverUser, mailserverPass)
+        mailserver.sendmail(mailserverUser, emailto, message.as_string())
+        mailserver.quit()
 
 
   except:
@@ -306,6 +322,11 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
 
   finally:
+    ### cleanup ###
+    if browser:
+      # close browser
+      browser.quit()
+    # goodbye!
     exit()
 
 
