@@ -224,11 +224,11 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
     browser.visit("https://start.duckduckgo.com")
 
     # find the search box and type in the query using fill
-    browser.get_element(id="search_form_input_homepage").fill(searchQuery)
+    browser.get_element(id="searchbox_input").fill(searchQuery)
 
     # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts
     sleep(moment)
-    browser.get_element(id="search_button_homepage", wait=moment).click()
+    browser.get_element(type="submit", wait=moment).click()
 
     # now in search results, refine our search to be news articles only
     sleep(moment)
