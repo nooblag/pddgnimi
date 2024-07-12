@@ -232,7 +232,7 @@ if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.get
 
     # now in search results, refine our search to be news articles only
     sleep(moment)
-    browser.get_element(id="duckbar_static").get_element(text="News", wait=moment).click()
+    browser.get_element(id="react-duckbar").get_element(text="News", wait=moment).click()
 
     # click on the region dropdown menu and ensure it is set to Australia
     sleep(moment)
