@@ -1,0 +1,12 @@
+# this list should be formatted as fields like so:
+# search query --scope=[day|week|month|any] --email=address@example.com
+# spaces are handled gracefully
+# quotes are explicit and parsed (i.e. passed to the search engine)
+# missing scope defaults to 'any time'
+# --email is required, otherwise line is ignored
+
+# e.g.
+# football --scope=day --email=alertaddress@example.com
+# search query "with quotes" --email=alertaddress@example.com
+# site:example.com search query --email=alertaddress@example.com
+
