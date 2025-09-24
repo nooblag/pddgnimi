@@ -1,340 +1,276 @@
-#!/usr/bin/python3
+﻿#!/usr/bin/python3
 
 
 ### REQUISITES ###
 
-try:
-  import sys # for getting vars from commandline
-  import os # for working with files
-  import stat # for file permissions
-  import pathlib # for getting working directory
-  import configparser # to work with settings
-  import getpass # handling password user input
-  import base64 # for some obfuscation
-  import elemental # wrapper for selenium
-  import traceback # to trace errors
-  import smtplib # for SMTP connection
-  import ssl # for TLS over SMTP
-  import html5lib # for handling HTML5
-  import htmlmin # for minifying HTML
-  import re # for find/replace and regex to verify e-mail address format
-  import email.message # used in plain text e-mail test during setup
-  import email.utils # used in plain text e-mail test during setup
-  import geckodriver_autoinstaller # handle driver presence for firefox
-  from bs4 import BeautifulSoup # for prettifying HTML
-  from time import sleep # used to slow things down even more
-  from email.mime.multipart import MIMEMultipart # for HTML e-mails
-  from email.mime.text import MIMEText # for HTML e-mails
-except Exception as errorMessage:
-  print('Error:', errorMessage)
-  print("\nBefore pddgnimi can be used, your system may need some software installed:")
-  bashInstall = """
-    # stop on any non-zero exit status
-    set -o errexit
-    # check to see if pip is absent, if so, attempt to install it
-    if [ ! -x "$(command -v pip)" ]; then
-      pip='python3-pip'
-      # try to guess some common package managers to do the install
-      # debian/ubuntu types
-      if [ -x "$(command -v apt)" ]; then
-        installer="sudo apt update && sudo apt install ${pip}"
-        printf "%s\n\n" "${installer}"
-        eval "${installer}"
-      # fedora/centos types
-      elif [ -x "$(command -v dnf)" ]; then
-        installer="sudo dnf update && sudo dnf install ${pip}"
-        printf "%s\n\n" "${installer}"
-        eval "${installer}"
-      # can't assume a package manager
-      else
-        printf "%s\n\n" "${pip}" >&2
-        exit 1
-      fi
-    fi
-    # ensure python dependencies are installed
-    pip install elemental html5lib htmlmin bs4 geckodriver_autoinstaller
-    printf "Software check complete.\n\n"
-  """
-  # run bash installer
-  os.system(bashInstall)
-  exit()
+import os # files
+import random # for sleep wait times
+import re
+import smtplib # for SMTP connection
+import sys # stdout, stderr, env vars and non-zero exits
+import traceback
+import validators # beta package to test domains and email addresses
+from bs4 import BeautifulSoup # prettify search results
+from email.mime.multipart import MIMEMultipart # for HTML e-mails
+from email.mime.text import MIMEText # for HTML e-mails
+from selenium.common.exceptions import NoSuchElementException as element_not_found
+from selenium.common.exceptions import TimeoutException as website_timeout
+from selenium import webdriver # browser
+from selenium.webdriver.common.by import By # find things by id, name, etc
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options as firefox_options
+from selenium.webdriver.firefox.service import Service as geckodriver
+from time import sleep # used to slow things down even more
 
-
-  
 
 
 ### CONFIG ###
 
+# [paths]
 # get full path where this script is
-wd = pathlib.Path(__file__).parent.absolute()
-# rewrite above to ensure trailing slash!
-wd = os.path.join(wd, '')
+working_directory=os.path.dirname(os.path.abspath(__file__))
+config_directory=os.path.join(working_directory, 'config')
+# browser
+geckodriver_path=os.path.join(working_directory, 'venv', 'bin', 'geckodriver')
+firefox_path='/usr/bin/firefox'
 
-# define config file
-configFile = wd + '.settings.conf'
-# set up config file structure parsing
-config = configparser.ConfigParser()
+# [environment variables and required files]
+config={
+  'pddgnimi_smtp_host': os.getenv('pddgnimi_smtp_host'),
+  'pddgnimi_smtp_port': os.getenv('pddgnimi_smtp_port'),
+  'pddgnimi_smtp_user': os.getenv('pddgnimi_smtp_user'),
+  'pddgnimi_smtp_pass': os.getenv('pddgnimi_smtp_pass'),
+  'file_queries': os.path.join(config_directory, 'search.list'),
+  'file_css_template': os.path.join(working_directory, 'style.css')
+}
 
-# 1 second wait time
-moment = 1
+config_parsed=True # set up test
+# any missing environment variables
+failed_config=[key for key, setting in config.items() if setting is None]
+# any missing/empty files
+failed_files=[
+  setting for key, setting in config.items()
+  if key.startswith('file_') and (
+    not os.path.isfile(config[key]) or
+    os.path.getsize(config[key]) == 0
+  )
+]
 
+if failed_config:
+  print(f"Environment variables: These are missing/empty: {", ".join(failed_config)}.", file=sys.stderr)
+  sys.exit(1) # always crash here
+if failed_files:
+  print(f"Required files: These files are missing/empty:\n  {"\n  ".join(failed_files)}", file=sys.stderr)
+  config_parsed=False
 
+if not validators.domain(config['pddgnimi_smtp_host']):
+  print(f"Environment variables: pddgnimi_smtp_host '{config['pddgnimi_smtp_host']}' doesn't appear to a valid domain.", file=sys.stderr)
+  config_parsed=False
 
+# check port must be a number and in valid range
+if not config['pddgnimi_smtp_port'].isdigit() or not 0 <= int(config['pddgnimi_smtp_port']) <= 65535:
+  print("Environment variables: pddgnimi_smtp_port must be in the range 0-65535.", file=sys.stderr)
+  config_parsed=False
 
+# check if geckodriver binary is available
+if not os.path.exists(geckodriver_path) or not os.access(geckodriver_path, os.X_OK):
+  print("Required files: 'geckodriver' is not properly configured.", file=sys.stderr)
+  config_parsed=False
 
-### SETUP ###
+# check if firefox is available
+if not os.path.exists(firefox_path) or not os.access(firefox_path, os.X_OK):
+  print("Required files: Firefox is not properly configured/installed.", file=sys.stderr)
+  config_parsed=False
 
-# prepare to check if an argument is a properly formatted e-mail address
-def email_error_notify():
-  print('Please enter a valid e-mail address as an argument with your search query.')
-  if len(sys.argv) > 2 and sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
-    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" ' + scope + ' emailaddress@somewhere.com')
-  else:
-    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
+if not config_parsed: sys.exit(1)
+
+# [scraper]
+# set up browser
+browser_options=firefox_options()
+# set these below to make explicit handling for where selenium can't do the trick automatically
+# like on arm64 for example, where selenium doesn't bundle geckodriver
+browser_options.binary_location=firefox_path
+browser_service=geckodriver(geckodriver_path)
+## browser_options.add_argument("--headless")
+# always default to a big desktoppy type viewport
+browser_options.add_argument('--window-size=1280x1024')
+output_html=os.path.join(working_directory, '.output.html')
+
+# [smtp]
+# test the mail server connection and credentials
+try:
+  smtp_server=smtplib.SMTP_SSL(config['pddgnimi_smtp_host'], config['pddgnimi_smtp_port'])
+  smtp_server.login(config['pddgnimi_smtp_user'], config['pddgnimi_smtp_pass'])
+except Exception as error:
+  print(f"SMTP: Failed to connect to server. {error}", file=sys.stderr)
+  sys.exit(1)
+finally:
+  if smtp_server: smtp_server.quit()
+
+# [search queries list]
+# init queries list to fill from config file
+queries=[]
+# load the session search queries and corresponding args from the config list file
+with open(config['file_queries'], 'r', encoding='utf-8') as file:
+  for line in file:
+    line=line.strip() # cleanup
+    # ignore empty lines or comments
+    if not line or line.startswith('#'): continue
+    query_data={} # empty
+    # capture everything before the first switch as search query
+    pre_vars=re.split(r'(--\w+)', line, maxsplit=1)
+    if len(pre_vars) > 1:
+      query_data['search_query']=pre_vars[0].strip()
+    # find --email and --scope settings
+    email_match=re.search(r'--email=([^\s]+)', line)
+    scope_match=re.search(r'--scope=([^\s]+)', line)
+    # email is compulsory so if it's not there, ignore the line
+    # no where to send the alert to
+    if email_match:
+      query_data['email']=email_match.group(1)
+      if scope_match:
+        query_data['scope']=scope_match.group(1)
+      # build out the line to the dictionary
+      queries.append(query_data)
+    else:
+      print(f"search.list: No alert e-mail address specified for '{line}', ignoring.")
+
+if not queries:
+  print("search.list: Nothing to do.")
   exit()
 
 
-# regex an email address supplied as an argument
-def testemail(address):
-  regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-  # now pass regex to fullmatch() method to check
-  if not (re.fullmatch(regex, address)):
-    # print invalid e-mail address in bold and notify
-    print('\033[1m' + address + '\033[0m appears to be an invalid e-mail address?')
-    email_error_notify()
+
+### FUNCTIONS ###
+
+# randomise a wait time from 1 to 5 seconds by default
+# also accept args to mod these
+def random_wait(min_sec=1, max_sec=5):
+  sleep(random.uniform(min_sec, max_sec))
 
 
-# make config file
-def makeConfig():
-  # ask user some questions to set up config file
-  print("\nBefore pddgnimi can be used, you need to set up a connection to a SMTP server to send e-mail alerts.")
-  print("Please enter your settings below.\n")
-  
-  # create a section for SMTP settings
-  config['SMTP'] = {}
+def click_search_scope(text):
+  spans=browser.find_elements(By.XPATH, f"//span[text()='{text}']")
+  for span in spans:
+    if span.is_displayed():
+      span.click()
+      return True
+  return False
 
-  # now ask user for each setting
-  mailserverHost = input("SMTP Hostname (e.g. smtp.somewhere.com): ")
-  mailserverPort = input("Server Port (e.g. 465 for TLS): ")
-  mailserverUser = input("Username/address (e.g. authaddress@somewhere.com): ")
-  mailserverPass = getpass.getpass("Account password: ")
 
-  # test settings work before writing them to a config file
+def send_alert(subject, html_content, to):
+  # create the e-mail message
+  # mime multipart to attach html contents
+  message=MIMEMultipart()
+  message['From']=config.get('pddgnimi_smtp_user')
+  message['To']=to
+  message['Subject']=subject
+  # attach as html
+  message.attach(MIMEText(html_content, 'html'))
   try:
-    message = email.message.Message()
-    message["Subject"] = "pddgnimi: SMTP Test"
-    message["From"] = mailserverUser
-    message["To"] = mailserverUser
-    message.add_header('Content-Type', 'text')
-    message.set_payload("This is a test message.")
-    # open TLS connection and send
-    with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-      mailserver.ehlo()
-      mailserver.login(mailserverUser, mailserverPass)
-      mailserver.sendmail(mailserverUser, mailserverUser, message.as_string())
-      mailserver.quit()
-  except Exception as errorMessage:
-    print("\nThere was a problem sending e-mail with the SMTP settings provided. Are you sure all the details are correct and that the server is up?")
-    print('Error:', errorMessage)
-    exit()
-
-  # test successful, now create config file
-  # obfuscate the SMTP login using base85-encoded bytes (https://docs.python.org/3/library/base64.html) so at least its not in plain text!
-  mailserverPassEncoded = base64.b85encode(mailserverPass.encode('utf-8'))
-  # create structure of variables to build config file
-  config['SMTP'] = {'host': mailserverHost, 'port': mailserverPort, 'user': mailserverUser, 'auth': mailserverPassEncoded.decode('utf-8')}
-  # write the settings to configFile
-  with open(configFile, 'w') as saveConfig:
-    config.write(saveConfig)
-  # chmod the configFile 400, so only the owner can see the contents of the file. that should also help a bit ;)
-  os.chmod(configFile, stat.S_IRUSR)
-
-  # done setting up
-  print("\nConfiguration successful. You're now ready to start scraping!")
-  print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com\n')
-  exit()
-
-
+    smtp_server=smtplib.SMTP_SSL(config['pddgnimi_smtp_host'], config['pddgnimi_smtp_port'])
+    smtp_server.login(config['pddgnimi_smtp_user'], config['pddgnimi_smtp_pass'])
+    smtp_server.send_message(message)
+    return True
+  except Exception as error:
+    print(f"SMTP: {error}")
+    return False
+  finally:
+    if smtp_server: smtp_server.quit()
 
 
 
 ### RUNTIME ###
-
-# if config file exists, and is a non-empty file, try to use it
-if os.path.exists(configFile) and os.path.isfile(configFile) and not os.path.getsize(configFile) == 0:
-
-  # read config file in sections
-  config.read(configFile)
-  mailserverHost = config['SMTP']['host']
-  mailserverPort = config['SMTP']['port']
-  mailserverUser = config['SMTP']['user']
-  mailserverPass = config['SMTP']['auth']
-  # overwrite string to decode password obfuscation and transform the result from decoded bytes
-  mailserverPass = base64.b85decode(mailserverPass).decode('utf-8')
-
-
-  ### parse command line arguments ###
-
-  # search query
-  if len(sys.argv) > 1:
-    searchQuery = sys.argv[1] # first argument passed to this script
-  else:
-    print('No search query.')
-    print('Please enter search query as an argument.')
-    print('  e.g. python3 ' + sys.argv[0] + ' "Search Query Here" emailaddress@somewhere.com')
-    exit()
-
-  # query scope (i.e. get news articles from past day, week, month; or any time) OR e-mail address to send alerts to
-  if len(sys.argv) > 2:
-    # test this argument to see if it's day|week|month|any
-    if sys.argv[2] == 'day' or sys.argv[2] == 'week' or sys.argv[2] == 'month' or sys.argv[2] == 'any':
-      scope = sys.argv[2] # second argument passed to this script
-      if len(sys.argv) > 3:
-        emailto = sys.argv[3] # third argument passed to this script
-        testemail(emailto)
-      else:
-        print('Search query and scope accepted, but missing an e-mail address.')
-        email_error_notify()
-    else:
-      # no scope defined, so default it to day and expect second argument to be an e-mail address
-      scope = 'day'
-      if len(sys.argv) > 3:
-        emailto = sys.argv[3] # third argument passed to this script
-      else:
-        emailto = sys.argv[2] # default to second argument passed to this script
-      # now run test to see if e-mail address (second argument) is valid
-      testemail(emailto)
-  else:
-    print('No e-mail address to send alert to.')
-    email_error_notify()
-
-
-
-  ### scraping ###
-
+if __name__ == "__main__":
   try:
-    # set up geckodriver
-    geckodriver_autoinstaller.install()
-    # open browser window
-    browser = elemental.Browser(headless=True)
-    # ensure browser window viewport is consistently big
-    browser.selenium_webdriver.set_window_size(1920,1080)
+    browser=webdriver.Firefox(service=browser_service, options=browser_options)
+    for query in queries:
+      search_query=query.get("search_query")
+      alert_email=query.get("email")
+      # if search scope is not set in search.list, default to nothing ## important ##
+      # this will mean selenium won't click on the date drop down later
+      # defaults to 'any time' without hardcoding
+      scope=query.get("scope", None)
+      random_wait()
 
-    # go to start.duckduckgo.com for consistent barebones search layout
-    browser.visit("https://start.duckduckgo.com")
+      # go to html version of duckduckgo.com for consistent barebones search layout and no js
+      browser.get("https://start.duckduckgo.com")
+      random_wait()
 
-    # find the search box and type in the query using fill
-    browser.get_element(id="searchbox_input").fill(searchQuery)
+      search_box=browser.find_element(By.ID, "searchbox_input")
+      # key in ddg news bang (https://duckduckgo.com/bangs)
+      search_box.send_keys('!ddgn ', search_query)
+      random_wait()
+      search_box.send_keys(Keys.RETURN)
+      random_wait()
 
-    # wait mega moments before clicking anything! duckduckgo likes to go reaaaaaally slowly, otherwise we get DOM freakouts
-    sleep(moment)
-    browser.get_element(type="submit", wait=moment).click()
+      # change the scope of search times, if set
+      # defaults to 'any' so don't do anything unless scope is set
+      match scope:
+        case "day":
+          click_search_scope('Any time')
+          random_wait()
+          click_search_scope('Past day')
+          random_wait()
+        case "week":
+          click_search_scope('Any time')
+          random_wait()
+          click_search_scope('Past week')
+          random_wait()
+        case "month":
+          click_search_scope('Any time')
+          random_wait()
+          click_search_scope('Past month')
+          random_wait()
 
-    # now in search results, refine our search to be news articles only
-    sleep(moment)
-    browser.get_element(id="react-duckbar").get_element(text="News", wait=moment).click()
+      # test if no results returned first
+      try:
+        no_results=browser.find_element(By.XPATH, "//span[contains(text(), 'No news articles found')]")
+        if no_results.is_displayed():
+          print(f"Search results: No news articles found for '{search_query}'.")
+          continue # no results, so skip on to next query
+      except element_not_found: pass # not an error, do nothing
+      random_wait()
 
-    # click on the region dropdown menu and ensure it is set to Australia
-    sleep(moment)
-    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--region", wait=moment).click()
-    sleep(moment)
-    browser.get_element(text="Australia", wait=moment).click()
+      # results container is <div id="react-layout"> so find that
+      react_layout=browser.find_element(By.XPATH, '//div[@id="react-layout"]')
+      # search results in <ol>
+      # locate that list inside <section> that is a child of any <div> within the <article> inside <div id="react-layout">
+      search_results_list=react_layout.find_element(By.XPATH, './/ancestor::article//div/section/ol')
+      search_results=search_results_list.get_attribute('innerHTML')
 
-    # turn safe search off
-    sleep(moment)
-    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--safe-search", wait=moment).click()
-    sleep(moment)
-    browser.get_element(text="Off", wait=moment).click()
+      if search_results:
+        # apply basic styling to the result from template
+        with open(config['file_css_template'], 'r') as file:
+          css=file.read()
+        
+        # set base domain for images, prepend the css template, add the search results and prettify html
+        template_wrapping=[] # init
+        template_wrapping.append('<base href="https://duckduckgo.com/">') # to make all external relative assets work
+        template_wrapping.append('<style>') # open tag
+        template_wrapping.append(css) # bump in css loaded from style template
+        template_wrapping.append('</style>')
+        template_wrapping.append(search_results)
+        # overwrite list with it flattened
+        template_wrapping=str().join(template_wrapping)
 
-    # narrow search to be within the specified scope
-    sleep(moment)
-    browser.get_element(id="vertical_wrapper").get_element(css="div.dropdown--date", wait=moment).click()
-    sleep(moment)
-    if scope == 'any':
-      browser.get_element(text="Any time", wait=moment).click()
-    elif scope == 'week':
-      browser.get_element(text="Past week", wait=moment).click()
-    elif scope == 'month':
-      browser.get_element(text="Past month", wait=moment).click()
-    else:
-      browser.get_element(text="Past day", wait=moment).click()
+        # parse and prettify the result
+        prettify_results=BeautifulSoup(template_wrapping, features="html5lib").prettify()
+        with open(output_html, 'w', encoding='utf-8') as file:
+          file.write(prettify_results)
 
-    # now get the column with results only
-    sleep(moment+2) # go mega slow here
-    searchResults = browser.get_element(css="div.results--main div.results.js-vertical-results", wait=moment).html
+        sent_alert=send_alert(f"pddgnimi: {search_query}", prettify_results, alert_email)
+        if sent_alert:
+          print(f"SMTP: Alert for '{search_query}' sent to {alert_email} successfully.")
+        else:
+          print(f"SMTP: Alert for '{search_query}' FAILED to send to {alert_email}.")
 
+      random_wait()
 
-
-    ### dump to file ###
-
-    # minify filter what we have so far in order to get things consistent for find/replace below
-    result = htmlmin.minify(searchResults)
-
-    # remove junk span tags and text from throughout the search results
-    find = "<span class=result__check__tt>Your browser indicates if you've visited this link</span>"
-    result = re.sub(find, '', result)
-    find = '<a class="result--more__btn btn btn--full">Load More</a>'
-    result = re.sub(find, '', result)
-
-    # apply basic styling to the result from template
-    # get the template
-    file = open(wd + 'style.css', 'r')
-    css = file.read()
-    file.close()
-    # set base domain for images, prepend the css template, and add the search results
-    result = '<base href="https://duckduckgo.com/">' + '<style>' + css + '</style>' + result
-
-    # parse and prettify the result
-    soup = BeautifulSoup(result,features="html5lib").prettify()
-
-    # now actually write
-    file = open(wd + '.output.html', 'w')
-    file.write(soup)
-    file.close()
-
-
-
-    ### send e-mail ###
-
-    # if we have some results, send e-mail alert
-    if not 'No news articles found for' in soup:
-      # set up a html e-mail
-      message = MIMEMultipart("alternative")
-      message["Subject"] = "pddgnimi: " + searchQuery
-      message["From"] = mailserverUser
-      message["To"] = emailto
-      # turn the soup output from above into html MIMEText object
-      emailbody = MIMEText(soup, "html")
-      # add the MIME part to the message
-      message.attach(emailbody)
-      # open TLS connection and send
-      with smtplib.SMTP_SSL(mailserverHost, mailserverPort, context=ssl.create_default_context()) as mailserver:
-        mailserver.ehlo()
-        mailserver.login(mailserverUser, mailserverPass)
-        mailserver.sendmail(mailserverUser, emailto, message.as_string())
-        mailserver.quit()
-
-
-  except:
-    print('Something went wrong.\n')
-    # show and trace the error message
+  except Exception as error:
+    print(f"Search results: Something went wrong getting results from DuckDuckGo.\n{error}")
+    success=False
     traceback.print_exc()
 
-
   finally:
-    ### cleanup ###
-    if browser:
-      # close browser
-      browser.quit()
-    # goodbye!
-    exit()
-
-
-
-
-
-
-# config file or settings not found
-else:
-  # assume this is the first runtime.
-  makeConfig()
+    if browser: browser.quit()
