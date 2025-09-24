@@ -1,6 +1,3 @@
-# don't publish configs
-.settings.conf
-
 # ignore geckodriver.log and pycache
 geckodriver.log
 __pycache__
@@ -8,3 +5,5 @@ __pycache__
 # ignore temporary output
 .output.html
 
+# no virtual environment stuff
+venv/
