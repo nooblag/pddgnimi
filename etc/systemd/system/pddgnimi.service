@@ -1,0 +1,28 @@
+[Unit]
+Description=pddgnimi
+Requires=network-online.target
+Requires=graphical.target
+After=network-online.target
+After=graphical.target
+
+
+[Service]
+Type=oneshot
+ExecStart=/path/to/pddgnimi/venv/bin/python3 /path/to/pddgnimi/pddgnimi.py
+WorkingDirectory=/path/to/pddgnimi
+StandardOutput=journal
+StandardError=journal
+User=username
+
+# only allow pddgnimi certain places
+ProtectSystem=full
+ReadWritePaths=/path/to/pddgnimi
+
+# config
+Environment="pddgnimi_smtp_host=example.com"
+Environment="pddgnimi_smtp_port=465"
+Environment="pddgnimi_smtp_user=this@example.com"
+Environment="pddgnimi_smtp_pass=123456qwerty"
+
+# scraping should never take longer than an 30 minutes, so kill if hanged
+TimeoutSec=30min

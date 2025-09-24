@@ -1,0 +1,18 @@
+[Unit]
+Description=daily runner for pddgnimi
+
+
+[Timer]
+Unit=pddgnimi.service
+OnCalendar=*-*-* 07:00:01
+OnCalendar=*-*-* 10:00:02
+OnCalendar=*-*-* 15:00:03
+OnCalendar=*-*-* 21:00:04
+RandomizedDelaySec=5min
+
+# tigger a run as soon as possible if the pddgnimi.service is down for an oncalendar time or misses one cos the power is off, etc
+Persistent=true
+
+
+[Install]
+WantedBy=timers.target
