@@ -100,15 +100,16 @@ For example, here's a "past day" e-mail alert for "celebrity news":
 
 ## Usage
 
-**pddgnimi** can be invoked from the command line:
+**pddgnimi** can be invoked once-off by running the configured service:
 
 ```bash
-source venv/bin/activate
-export pddgnimi_smtp_host='mail.example.com'
-export pddgnimi_smtp_port='123'
-export pddgnimi_smtp_user='sender@example.com'
-export pddgnimi_smtp_pass='smtpuserpass123'
-python3 pddgnimi.py
+sudo systemctl start pddgnimi.service
+```
+
+Logs are also viewable, using the journal. For example, to see output since last boot and last 24 hours:
+
+```bash
+journalctl --unit=pddgnimi.service --boot --since=yesterday --no-pager
 ```
 
 <br>
