@@ -19,10 +19,10 @@ ProtectSystem=full
 ReadWritePaths=/path/to/pddgnimi
 
 # config
-Environment="pddgnimi_smtp_host=example.com"
-Environment="pddgnimi_smtp_port=465"
-Environment="pddgnimi_smtp_user=this@example.com"
-Environment="pddgnimi_smtp_pass=123456qwerty"
+Environment='pddgnimi_smtp_host=example.com'
+Environment='pddgnimi_smtp_port=465'
+Environment='pddgnimi_smtp_user=sender@example.com'
+Environment='pddgnimi_smtp_pass=123456qwerty'
 
 # scraping should never take longer than an 30 minutes, so kill if hanged
 TimeoutSec=30min
