@@ -91,7 +91,7 @@ browser_options=firefox_options()
 # like on arm64 for example, where selenium doesn't bundle geckodriver
 browser_options.binary_location=firefox_path
 browser_service=geckodriver(geckodriver_path)
-## browser_options.add_argument("--headless")
+browser_options.add_argument("--headless")
 # always default to a big desktoppy type viewport
 browser_options.add_argument('--window-size=1280x1024')
 output_html=os.path.join(working_directory, '.output.html')
