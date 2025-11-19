@@ -9,6 +9,7 @@ import re
 import smtplib # for SMTP connection
 import sys # stdout, stderr, env vars and non-zero exits
 import traceback
+import urllib.parse
 import validators # beta package to test domains and email addresses
 from bs4 import BeautifulSoup # prettify search results
 from email.mime.multipart import MIMEMultipart # for HTML e-mails
@@ -193,15 +194,8 @@ if __name__ == "__main__":
       scope=query.get("scope", None)
       random_wait()
 
-      # go to html version of duckduckgo.com for consistent barebones search layout and no js
-      browser.get("https://start.duckduckgo.com")
-      random_wait()
-
-      search_box=browser.find_element(By.ID, "searchbox_input")
-      # key in ddg news bang (https://duckduckgo.com/bangs)
-      search_box.send_keys('!ddgn ', search_query)
-      random_wait()
-      search_box.send_keys(Keys.RETURN)
+      # hit direct query args for news pages to skip gumpf with finding search box
+      browser.get(f"https://duckduckgo.com/?q={urllib.parse.quote(search_query)}&iar=news&ia=news")
       random_wait()
 
       # change the scope of search times, if set
